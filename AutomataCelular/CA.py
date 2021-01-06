@@ -48,9 +48,17 @@ class CA(object):
 
         self.zoom_val_desplegable = 1
         #Atributos para controlar la visualización de las células.
-        self.zoom_val = 10
+        self.zoom_val = 1 #1 = 1 pix por célula, 5 = 5 pix por célula, 10 = 10 pix por célula
         self.scroll_x = 0
         self.scroll_y = 0
+
+        self.celulas_desplegadas = 500
+
+        #    Atributos para control de scrollbar.
+        self.posicion_scroll_vertical = 40
+        self.posicion_scroll_horizontal = 40
+
+        #   Atributos para control de zoom
 
         self.s_min = 2
         self.s_max = 3
@@ -105,6 +113,71 @@ class CA(object):
             confirmar_regla_boton = tk.Button(root, text="Cambiar regla.", command=lambda: self.validar_regla_ingresada(entrada_regla.get())).pack()
             root.mainloop()
 
+    def scrollbar(self, scrollbar_selecionada, posicion_nueva):
+        if scrollbar_selecionada:
+            print("Horizontal")
+            if posicion_nueva > 500 - self.tamanio_grip:
+                self.posicion_scroll_horizontal = 500 - self.tamanio_grip
+            else:
+                self.posicion_scroll_horizontal = posicion_nueva
+        else:
+            print("Vertical")
+            if posicion_nueva > 500 - self.tamanio_grip:
+                self.posicion_scroll_vertical = 500 - self.tamanio_grip
+            else:
+                self.posicion_scroll_vertical = posicion_nueva
+
+        self.inicio_x = int((self.posicion_scroll_horizontal - 40) * (self.celulas_por_lado) / 500)
+        self.inicio_y = int((self.posicion_scroll_vertical - 40) * (self.celulas_por_lado) / 500)
+
+    def zoom_in(self):
+        
+        if self.zoom_val < 10:
+
+            if self.zoom_val == 1:
+                self.zoom_val = 5
+                self.inicio_x += 125
+                self.inicio_y += 125       
+                self.celulas_desplegadas = 250            
+
+            elif self.zoom_val == 5:
+                self.zoom_val = 10
+                self.inicio_x += 100
+                self.inicio_y += 100       
+                self.celulas_desplegadas = 50
+
+            if self.inicio_x + self.celulas_desplegadas > self.celulas_por_lado:
+                self.inicio_x -= self_inicio_x - self.celulas_desplegadas - self.celulas_por_lado
+            if self.inicio_y + self.celulas_desplegadas > self.celulas_por_lado:
+                self.inicio_y -= self_inicio_y - self.celulas_desplegadas - self.celulas_por_lado
+            
+            #Se modifica el tamaño del grip del scrollbar para que se visualice correctamente.
+            self.tamanio_grip = (self.celulas_desplegadas/self.celulas_por_lado)*self.tamanio_superficie_grid
+
+    def zoom_out(self):
+        
+        if self.zoom_val > 1:
+
+            if self.zoom_val == 10:
+                self.zoom_val = 5
+                self.inicio_x -= 100
+                self.inicio_y -= 100       
+                self.celulas_desplegadas = 250            
+
+            elif self.zoom_val == 5:
+                self.zoom_val = 1
+                self.inicio_x -= 125
+                self.inicio_y -= 125       
+                self.celulas_desplegadas = 500
+
+            if self.inicio_x < 0:
+                self.inicio_x = 0
+            if self.inicio_y < 0:
+                self.inicio_y = 0
+            
+            #Se modifica el tamaño del grip del scrollbar para que se visualice correctamente.
+            self.tamanio_grip = (self.celulas_desplegadas/self.celulas_por_lado)*self.tamanio_superficie_grid
+
     def iniciar_CA(self):
 
         pygame.init()
@@ -114,6 +187,11 @@ class CA(object):
         self.screen = pygame.display.set_mode((self.largo_grid, self.ancho_grid))
         #self.screen.set_alpha(128)
         self.screen.fill(self.background_color)
+
+        #Posicion inicial de dibujado.
+
+        self.inicio_x = 0
+        self.inicio_y = 0
 
         #Texto y botones.
 
@@ -164,16 +242,16 @@ class CA(object):
 
         #   Scrollbar
 
-        celulas_desplegadas = 500
-        tamanio_grip = (celulas_desplegadas/self.celulas_por_lado)*self.tamanio_superficie_grid
+        self.celulas_desplegadas = 500
+        self.tamanio_grip = (self.celulas_desplegadas/self.celulas_por_lado)*self.tamanio_superficie_grid
 
         #       Scroll vertical
         pygame.draw.rect(self.superficie_principal, self.sombra_boton, (17, 40, 18, 500))
-        pygame.draw.rect(self.superficie_principal, (0, 0, 0), (19, 100, 14, tamanio_grip))
+        pygame.draw.rect(self.superficie_principal, (0, 0, 0), (19, self.posicion_scroll_vertical, 14, self.tamanio_grip))
 
         #       Scroll horizontal
         pygame.draw.rect(self.superficie_principal, self.sombra_boton, (40, 17, 500, 18))
-        pygame.draw.rect(self.superficie_principal, (0, 0, 0), (100, 19, tamanio_grip, 14))
+        pygame.draw.rect(self.superficie_principal, (0, 0, 0), (self.posicion_scroll_horizontal, 19, self.tamanio_grip, 14))
 
         while(True):
 
@@ -193,9 +271,32 @@ class CA(object):
                         print("B: ", self.B)
                         print("S: ", self.S)
 
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    print("Click con el ratón.")
+                    if event.key == pygame.K_z:
+                        print("Zoom in")
+                        self.zoom_in()
+
+                    if event.key == pygame.K_x:
+                        print("Zoom out")
+                        self.zoom_out()
+
+                if event.type == pygame.MOUSEBUTTONDOWN:                    
                     posicion_mouse = pygame.mouse.get_pos()
+                    print("Click con el ratón en posición: ", posicion_mouse)
+                    #Vertical (17, 40, 18, 500)
+                    #Horizontal (40, 17, 500, 18)
+                    if(posicion_mouse[0] >= 17 and posicion_mouse[0] <= 17+18 and posicion_mouse[1] >= 40 and posicion_mouse[1] <= 40 + 500):
+                        #Control vertical.
+                        self.scrollbar(False, posicion_mouse[1])
+                                #       Scroll vertical
+                        pygame.draw.rect(self.superficie_principal, self.sombra_boton, (17, 40, 18, 500))
+                        pygame.draw.rect(self.superficie_principal, (0, 0, 0), (19, self.posicion_scroll_vertical, 14, self.tamanio_grip))
+
+                    elif(posicion_mouse[0] >= 40 and posicion_mouse[0] <= 40 + 500 and posicion_mouse[1] >= 17 and posicion_mouse[1] <= 17 + 18):
+                        #Control horizontal
+                        self.scrollbar(True, posicion_mouse[0])
+                                                #       Scroll horizontal
+                        pygame.draw.rect(self.superficie_principal, self.sombra_boton, (40, 17, 500, 18))
+                        pygame.draw.rect(self.superficie_principal, (0, 0, 0), (self.posicion_scroll_horizontal, 19, self.tamanio_grip, 14))
                     
             if not self.pausa:
                 # print("Juego en movimiento.")
@@ -209,7 +310,10 @@ class CA(object):
 
             self.screen.blit(self.superficie_principal, (0, 0))
             limite_dibujo = 50*self.zoom_val
-            surf_celulas = pygame.surfarray.make_surface(self.grid_t_0[0+self.scroll_x:limite_dibujo+self.scroll_x, 0+self.scroll_y:limite_dibujo+self.scroll_y]*255)
+            #surf_celulas = pygame.surfarray.make_surface(self.grid_t_0[0+self.scroll_x:limite_dibujo+self.scroll_x, 0+self.scroll_y:limite_dibujo+self.scroll_y]*255)
+            
+            #Redibujado del nuevo estado.
+            surf_celulas = pygame.surfarray.make_surface(self.grid_t_0[self.inicio_x:self.inicio_x + self.celulas_desplegadas, self.inicio_y:self.inicio_y+self.celulas_desplegadas]*255)
             self.superficie_principal.blit(pygame.transform.scale(surf_celulas, (self.tamanio_superficie_grid, self.tamanio_superficie_grid)), (40, 40))
 
 
