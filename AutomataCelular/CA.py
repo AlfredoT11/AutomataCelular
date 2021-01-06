@@ -33,7 +33,8 @@ class CA(object):
 
         self.largo_grid = 962
         self.ancho_grid = 600
-        self.tamanio_superficie_grid = 500
+        self.tamanio_superficie_grid = 540
+        self.tamanio_superficie_desplegable = 500
         self.tamanio_celula = 10
         self.celulas_por_lado = celulas_por_lado
 
@@ -116,14 +117,14 @@ class CA(object):
     def scrollbar(self, scrollbar_selecionada, posicion_nueva):
         if scrollbar_selecionada:
             print("Horizontal")
-            if posicion_nueva > 500 - self.tamanio_grip:
-                self.posicion_scroll_horizontal = 500 - self.tamanio_grip
+            if posicion_nueva > 540 - self.tamanio_grip:
+                self.posicion_scroll_horizontal = 540 - self.tamanio_grip
             else:
                 self.posicion_scroll_horizontal = posicion_nueva
         else:
             print("Vertical")
-            if posicion_nueva > 500 - self.tamanio_grip:
-                self.posicion_scroll_vertical = 500 - self.tamanio_grip
+            if posicion_nueva > 540 - self.tamanio_grip:
+                self.posicion_scroll_vertical = 540 - self.tamanio_grip
             else:
                 self.posicion_scroll_vertical = posicion_nueva
 
@@ -177,6 +178,27 @@ class CA(object):
             
             #Se modifica el tamaño del grip del scrollbar para que se visualice correctamente.
             self.tamanio_grip = (self.celulas_desplegadas/self.celulas_por_lado)*self.tamanio_superficie_grid
+
+    def modificar_valor_celula(self, pos_mouse):
+        
+        if self.zoom_val == 1:           
+            x = self.inicio_x + pos_mouse[0] - 40
+            y = self.inicio_y + pos_mouse[1] - 40
+            self.grid_t_0[x, y] = self.grid_t_0[x, y] ^ 1
+
+        elif self.zoom_val == 5:
+            x, y = int(np.floor(self.inicio_x + (pos_mouse[0]-40)/2)), int(np.floor(self.inicio_y + (pos_mouse[1]-40)/2))
+            self.grid_t_0[x, y] = self.grid_t_0[x, y] ^ 1
+        else:
+            x, y = int(np.floor(self.inicio_x + (pos_mouse[0]-40)/10)), int(np.floor(self.inicio_y + (pos_mouse[1]-40)/10))
+            self.grid_t_0[x, y] = self.grid_t_0[x, y] ^ 1
+
+        """if self.zoom_val == 1:
+            x, y = int(np.floor(self.scroll_x + pos_mouse[0]/10)), int(np.floor(self.scroll_y + pos_mouse[1]/10))
+            #print("x : {} , y {}".format(np.floor(scroll_x + mouse[0]/10), np.floor(scroll_y + mouse[1]/10)))
+            #print("Actual: ", grid_original[x, y])
+            self.grid_t_0[x, y] = self.grid_t_0[x, y] ^ 1
+            #print("Nuevo: ", grid_original[x, y])"""
 
     def iniciar_CA(self):
 
@@ -298,6 +320,12 @@ class CA(object):
                         pygame.draw.rect(self.superficie_principal, self.sombra_boton, (40, 17, 500, 18))
                         pygame.draw.rect(self.superficie_principal, (0, 0, 0), (self.posicion_scroll_horizontal, 19, self.tamanio_grip, 14))
                     
+                    #Verificación de cambio de estado de célula.
+                    elif(posicion_mouse[0] >= 40 and posicion_mouse[0] <= 540 and posicion_mouse[0] >= 40 and posicion_mouse[0] <= 540):
+                        print("Modificacion celula.")
+                        self.modificar_valor_celula(posicion_mouse)
+
+
             if not self.pausa:
                 # print("Juego en movimiento.")
                 # self.grid_t_1 = OptimizacionesC.evaluar(self.grid_t_0, 2, 3, 3, 3).astype(np.int)    
@@ -309,26 +337,14 @@ class CA(object):
                 pygame.display.set_caption('Autómata celular. Generación: '+str(self.generacion)+" Número de células: "+str(numero_celulas) + " Zoom: "+str(self.zoom_val_desplegable)+" B0123456789/S0123456789")
 
             self.screen.blit(self.superficie_principal, (0, 0))
-            limite_dibujo = 50*self.zoom_val
-            #surf_celulas = pygame.surfarray.make_surface(self.grid_t_0[0+self.scroll_x:limite_dibujo+self.scroll_x, 0+self.scroll_y:limite_dibujo+self.scroll_y]*255)
             
             #Redibujado del nuevo estado.
             surf_celulas = pygame.surfarray.make_surface(self.grid_t_0[self.inicio_x:self.inicio_x + self.celulas_desplegadas, self.inicio_y:self.inicio_y+self.celulas_desplegadas]*255)
-            self.superficie_principal.blit(pygame.transform.scale(surf_celulas, (self.tamanio_superficie_grid, self.tamanio_superficie_grid)), (40, 40))
+            self.superficie_principal.blit(pygame.transform.scale(surf_celulas, (self.tamanio_superficie_desplegable, self.tamanio_superficie_desplegable)), (40, 40))
 
 
             pygame.display.update()
             self.FramePerSec.tick(self.FPS)
-
-    def modificar_valor_celula(self, pos_mouse):
-
-        if(pos_mouse[0] < self.tamanio_superficie_grid and mouse[1] < self.tamanio_superficie_grid):
-            if self.zoom_val == 1:
-                x, y = int(np.floor(self.scroll_x + pos_mouse[0]/10)), int(np.floor(self.scroll_y + pos_mouse[1]/10))
-                #print("x : {} , y {}".format(np.floor(scroll_x + mouse[0]/10), np.floor(scroll_y + mouse[1]/10)))
-                #print("Actual: ", grid_original[x, y])
-                self.grid_t_0[x, y] = self.grid_t_0[x, y] ^ 1
-                #print("Nuevo: ", grid_original[x, y])
 
 if __name__ == '__main__':
     automata_celular = CA(1500)
