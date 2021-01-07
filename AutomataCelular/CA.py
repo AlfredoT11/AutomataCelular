@@ -1,6 +1,7 @@
 #Bibliotecas gráficos.
 import pygame
 import pygame.freetype
+import tkinter.filedialog
 import tkinter as tk
 
 #Bibliotecas procesamiento.
@@ -31,7 +32,7 @@ class CA(object):
 
     def __init__(self, celulas_por_lado):
 
-        self.largo_grid = 962
+        self.largo_grid = 800
         self.ancho_grid = 600
         self.tamanio_superficie_grid = 540
         self.tamanio_superficie_desplegable = 500
@@ -42,6 +43,7 @@ class CA(object):
         self.grid_t_1 = np.zeros((celulas_por_lado, celulas_por_lado), np.int)
 
         self.patron = manejo_archivos_lif.leer_archivo_lif("lif/GUNSTAR.lif")
+        self.numero_celulas = np.sum(self.grid_t_0)
         self.offset_inicio_patron = 100
         for i in range(self.patron.shape[0]):
             for j in range(self.patron.shape[1]):
@@ -50,8 +52,6 @@ class CA(object):
         self.zoom_val_desplegable = 1
         #Atributos para controlar la visualización de las células.
         self.zoom_val = 1 #1 = 1 pix por célula, 5 = 5 pix por célula, 10 = 10 pix por célula
-        self.scroll_x = 0
-        self.scroll_y = 0
 
         self.celulas_desplegadas = 500
 
@@ -60,11 +60,6 @@ class CA(object):
         self.posicion_scroll_horizontal = 40
 
         #   Atributos para control de zoom
-
-        self.s_min = 2
-        self.s_max = 3
-        self.r_min = 2
-        self.r_min = 2
 
         self.regla = "B3/S23"
         self.B = [3]
@@ -99,12 +94,13 @@ class CA(object):
                 for valor in B_S[1][1:]:
                     self.S.append(int(valor))
 
+            self.regla = regla_ingresada
+
         else:
             print("Regla inválida.")
 
     def cambiar_regla(self):
         if self.pausa:
-
             root = tk.Tk()
             canvas = tk.Canvas(root, width = 400, height = 300)
             canvas.pack()
@@ -113,6 +109,40 @@ class CA(object):
             canvas.create_window(200, 140, window = entrada_regla)
             confirmar_regla_boton = tk.Button(root, text="Cambiar regla.", command=lambda: self.validar_regla_ingresada(entrada_regla.get())).pack()
             root.mainloop()
+
+    def cargar_archivo(self):
+        if self.pausa:
+            root = tk.Tk()
+            root.filename = tkinter.filedialog.askopenfilename(initialdir = os.getcwdb(),title = "Selecciona el archivo .lif.",filetypes = (("Life files","*.LIF"),("all files","*.*")))
+            ruta_archivo = root.filename
+            tk.Button(root, text="Cargar archivo .lif", command=root.destroy).pack()
+            root.mainloop()
+
+            self.patron = manejo_archivos_lif.leer_archivo_lif(ruta_archivo)
+            filas_patron, columnas_patron = self.patron.shape
+            
+            print("Tamanio: ", self.patron.shape)
+
+            nuevo_tamanio = max(filas_patron, columnas_patron)+2*self.offset_inicio_patron
+
+            #Tamanio mínimo = 500
+            if nuevo_tamanio < 1000:
+                print("Cambiando tamanio")
+                nuevo_tamanio = 1000
+
+            self.celulas_por_lado = nuevo_tamanio
+
+            #Se crea un nuevo tamaño en función del archivo leído.
+
+            self.grid_t_0 = np.zeros((nuevo_tamanio, nuevo_tamanio), np.int)
+            self.grid_t_1 = np.zeros((nuevo_tamanio, nuevo_tamanio), np.int)
+
+            for i in range(filas_patron):
+                for j in range(columnas_patron):
+                    self.grid_t_0[i+self.offset_inicio_patron, j+self.offset_inicio_patron] = self.patron[i, j]
+
+            self.generacion = 0
+            self.numero_celulas = np.sum(self.grid_t_0)
 
     def scrollbar(self, scrollbar_selecionada, posicion_nueva):
         if scrollbar_selecionada:
@@ -200,11 +230,64 @@ class CA(object):
             self.grid_t_0[x, y] = self.grid_t_0[x, y] ^ 1
             #print("Nuevo: ", grid_original[x, y])"""
 
+    def manejo_click(self):
+        posicion_mouse = pygame.mouse.get_pos()
+        print("Click con el ratón en posición: ", posicion_mouse)
+        #Vertical (17, 40, 18, 500)
+        #Horizontal (40, 17, 500, 18)
+        if(posicion_mouse[0] >= 17 and posicion_mouse[0] <= 17+18 and posicion_mouse[1] >= 40 and posicion_mouse[1] <= 40 + 500):
+            #Control vertical.
+            self.scrollbar(False, posicion_mouse[1])
+                    #       Scroll vertical
+            pygame.draw.rect(self.superficie_principal, self.sombra_boton, (17, 40, 18, 500))
+            pygame.draw.rect(self.superficie_principal, (0, 0, 0), (19, self.posicion_scroll_vertical, 14, self.tamanio_grip))
+
+        elif(posicion_mouse[0] >= 40 and posicion_mouse[0] <= 40 + 500 and posicion_mouse[1] >= 17 and posicion_mouse[1] <= 17 + 18):
+            #Control horizontal
+            self.scrollbar(True, posicion_mouse[0])
+                                    #       Scroll horizontal
+            pygame.draw.rect(self.superficie_principal, self.sombra_boton, (40, 17, 500, 18))
+            pygame.draw.rect(self.superficie_principal, (0, 0, 0), (self.posicion_scroll_horizontal, 19, self.tamanio_grip, 14))
+                    
+        #Verificación de cambio de estado de célula.
+        elif(posicion_mouse[0] >= 40 and posicion_mouse[0] <= 540 and posicion_mouse[0] >= 40 and posicion_mouse[0] <= 540):
+            print("Modificacion celula.")
+            self.modificar_valor_celula(posicion_mouse)
+
+        #Se verifica si es una posición donde se encuentra algún botón.
+        #self.distancia_entre_boton = 60
+        #self.tamanio_boton_x = 190
+        #self.tamanio_boton_y = 32
+        #self.pos_x_gui = 570
+        #self.pos_y_gui = 37
+
+        if(posicion_mouse[0] > 540):
+            print("Posible presión de botón.")
+            #Pausa.
+            if(posicion_mouse[0] >= self.pos_x_gui and posicion_mouse[0] <= self.pos_x_gui + self.tamanio_boton_x and 
+               posicion_mouse[1] >= self.pos_y_gui and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y):
+                print("Boton pausa presionado.")
+                self.pausa = not self.pausa
+            
+            #Cambiar regla.
+            elif(posicion_mouse[0] >= self.pos_x_gui and posicion_mouse[0] <= self.pos_x_gui + self.tamanio_boton_x and 
+               posicion_mouse[1] >= self.pos_y_gui+self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+self.distancia_entre_boton):
+                print("Boton cambio de regla presionado.")
+                self.cambiar_regla()
+
+            #Cargar archivo.
+            elif(posicion_mouse[0] >= self.pos_x_gui and posicion_mouse[0] <= self.pos_x_gui + self.tamanio_boton_x and 
+               posicion_mouse[1] >= self.pos_y_gui+2*self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+2*self.distancia_entre_boton):
+                print("Boton cargar archivo presionado.")
+                self.cargar_archivo()
+
+                  
+
     def iniciar_CA(self):
 
         pygame.init()
         pygame.display.set_caption('Autómata celular')
-        self.font = pygame.freetype.Font('Roboto/Roboto-Light.ttf', 19)
+        self.font = pygame.freetype.Font('Roboto/Roboto-Light.ttf', 16)
         
         self.screen = pygame.display.set_mode((self.largo_grid, self.ancho_grid))
         #self.screen.set_alpha(128)
@@ -218,50 +301,60 @@ class CA(object):
         #Texto y botones.
 
         tamanio_borde = 7
-        distancia_entre_boton = 84
+        self.distancia_entre_boton = 60
+        self.tamanio_boton_x = 190
+        self.tamanio_boton_y = 32
+
+        self.pos_x_gui = 570
+        self.pos_y_gui = 37
 
         #Pausa
-        pygame.draw.rect(self.screen, self.sombra_boton, (720, 42, 220, 40), border_radius = tamanio_borde)
-        pygame.draw.rect(self.screen, self.color_boton, (720, 37, 220, 40), border_radius = tamanio_borde)
+        pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+        pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         pausa_text_surface, pausa_text_rect = self.font.render('Pausa', (255, 255, 255))
-        self.screen.blit(pausa_text_surface, (797, 50))
+        self.screen.blit(pausa_text_surface, (self.pos_x_gui, 50))
         
 
         #Cambiar regla
-        pygame.draw.rect(self.screen, self.sombra_boton, (720, 42+distancia_entre_boton, 220, 40), border_radius = tamanio_borde)
-        pygame.draw.rect(self.screen, self.color_boton, (720, 37+distancia_entre_boton, 220, 40), border_radius = tamanio_borde)
+        pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+        pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         cambiar_regla_text_surface, cambiar_regla_text_rect = self.font.render('Cambiar regla', (255, 255, 255))
-        self.screen.blit(cambiar_regla_text_surface, (775, 50+distancia_entre_boton))
+        self.screen.blit(cambiar_regla_text_surface, (self.pos_x_gui, 50+self.distancia_entre_boton))
 
         #Cargar archivo
-        pygame.draw.rect(self.screen, self.sombra_boton, (720, 42+2*distancia_entre_boton, 220, 40), border_radius = tamanio_borde)
-        pygame.draw.rect(self.screen, self.color_boton, (720, 37+2*distancia_entre_boton, 220, 40), border_radius = tamanio_borde)
+        pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+2*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+        pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+2*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         cargar_archivo_text_surface, cargar_archivo_text_rect = self.font.render('Cargar archivo', (255, 255, 255))
-        self.screen.blit(cargar_archivo_text_surface, (775, 50+2*distancia_entre_boton))
+        self.screen.blit(cargar_archivo_text_surface, (self.pos_x_gui, 50+2*self.distancia_entre_boton))
 
         #Guardar archivo
-        pygame.draw.rect(self.screen, self.sombra_boton, (720, 42+3*distancia_entre_boton, 220, 40), border_radius = tamanio_borde)
-        pygame.draw.rect(self.screen, self.color_boton, (720, 37+3*distancia_entre_boton, 220, 40), border_radius = tamanio_borde)
+        pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+3*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+        pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+3*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         guardar_archivo_text_surface, guardar_archivo_text_rect = self.font.render('Guardar archivo', (255, 255, 255))
-        self.screen.blit(guardar_archivo_text_surface, (767, 50+3*distancia_entre_boton))
+        self.screen.blit(guardar_archivo_text_surface, (self.pos_x_gui, 50+3*self.distancia_entre_boton))
 
         #Generar gráfica de densidad poblacional
-        pygame.draw.rect(self.screen, self.sombra_boton, (720, 42+4*distancia_entre_boton, 220, 40), border_radius = tamanio_borde)
-        pygame.draw.rect(self.screen, self.color_boton, (720, 37+4*distancia_entre_boton, 220, 40), border_radius = tamanio_borde)
+        pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+4*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+        pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+4*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         generar_grafica_text_surface, generar_grafica_text_rect = self.font.render('Mostrar densidad', (255, 255, 255))
-        self.screen.blit(generar_grafica_text_surface, (760, 50+4*distancia_entre_boton))
+        self.screen.blit(generar_grafica_text_surface, (self.pos_x_gui, 50+4*self.distancia_entre_boton))
 
         #Generar atractores
-        pygame.draw.rect(self.screen, self.sombra_boton, (720, 42+5*distancia_entre_boton, 220, 40), border_radius = tamanio_borde)
-        pygame.draw.rect(self.screen, self.color_boton, (720, 37+5*distancia_entre_boton, 220, 40), border_radius = tamanio_borde)
+        pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+5*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+        pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+5*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         generar_atractores_text_surface, generar_atractores_text_rect = self.font.render('Generar atractores', (255, 255, 255))
-        self.screen.blit(generar_atractores_text_surface, (757, 50+5*distancia_entre_boton))
+        self.screen.blit(generar_atractores_text_surface, (self.pos_x_gui, 50+5*self.distancia_entre_boton))
+
+        #Ayuda
+        pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+8*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+        pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+8*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+        generar_atractores_text_surface, generar_atractores_text_rect = self.font.render('Ayuda', (255, 255, 255))
+        self.screen.blit(generar_atractores_text_surface, (self.pos_x_gui, 50+8*self.distancia_entre_boton))
 
 
         #Manejo de superficie de desplegado de autómata.
         self.superficie_principal = pygame.Surface((self.tamanio_superficie_grid, self.tamanio_superficie_grid))
-        self.superficie_principal.fill(self.celulas_vivas_color)
-
+        self.superficie_principal.fill(self.background_color)
         #   Scrollbar
 
         self.celulas_desplegadas = 500
@@ -302,29 +395,7 @@ class CA(object):
                         self.zoom_out()
 
                 if event.type == pygame.MOUSEBUTTONDOWN:                    
-                    posicion_mouse = pygame.mouse.get_pos()
-                    print("Click con el ratón en posición: ", posicion_mouse)
-                    #Vertical (17, 40, 18, 500)
-                    #Horizontal (40, 17, 500, 18)
-                    if(posicion_mouse[0] >= 17 and posicion_mouse[0] <= 17+18 and posicion_mouse[1] >= 40 and posicion_mouse[1] <= 40 + 500):
-                        #Control vertical.
-                        self.scrollbar(False, posicion_mouse[1])
-                                #       Scroll vertical
-                        pygame.draw.rect(self.superficie_principal, self.sombra_boton, (17, 40, 18, 500))
-                        pygame.draw.rect(self.superficie_principal, (0, 0, 0), (19, self.posicion_scroll_vertical, 14, self.tamanio_grip))
-
-                    elif(posicion_mouse[0] >= 40 and posicion_mouse[0] <= 40 + 500 and posicion_mouse[1] >= 17 and posicion_mouse[1] <= 17 + 18):
-                        #Control horizontal
-                        self.scrollbar(True, posicion_mouse[0])
-                                                #       Scroll horizontal
-                        pygame.draw.rect(self.superficie_principal, self.sombra_boton, (40, 17, 500, 18))
-                        pygame.draw.rect(self.superficie_principal, (0, 0, 0), (self.posicion_scroll_horizontal, 19, self.tamanio_grip, 14))
-                    
-                    #Verificación de cambio de estado de célula.
-                    elif(posicion_mouse[0] >= 40 and posicion_mouse[0] <= 540 and posicion_mouse[0] >= 40 and posicion_mouse[0] <= 540):
-                        print("Modificacion celula.")
-                        self.modificar_valor_celula(posicion_mouse)
-
+                    self.manejo_click()
 
             if not self.pausa:
                 # print("Juego en movimiento.")
@@ -332,9 +403,9 @@ class CA(object):
                 # print("Celulas: ", np.sum(self.grid_t_0))          
                 self.grid_t_1 = OptimizacionesC.evaluar(self.grid_t_0, self.B, self.S).astype(np.int)
                 self.grid_t_0 = self.grid_t_1.copy()
-                numero_celulas = np.sum(self.grid_t_0)
+                self.numero_celulas = np.sum(self.grid_t_0)
                 self.generacion += 1
-                pygame.display.set_caption('Autómata celular. Generación: '+str(self.generacion)+" Número de células: "+str(numero_celulas) + " Zoom: "+str(self.zoom_val_desplegable)+" B0123456789/S0123456789")
+                pygame.display.set_caption('Autómata celular. Generación: '+str(self.generacion)+" Número de células: "+str(self.numero_celulas) + " Zoom: "+str(self.zoom_val)+" "+self.regla)
 
             self.screen.blit(self.superficie_principal, (0, 0))
             
