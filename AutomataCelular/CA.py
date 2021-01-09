@@ -3,6 +3,8 @@ import pygame
 import pygame.freetype
 import tkinter.filedialog
 import tkinter as tk
+import matplotlib
+import matplotlib.pyplot as plt
 
 #Bibliotecas procesamiento.
 import numpy as np
@@ -28,7 +30,7 @@ class CA(object):
     color_boton = pygame.Color(26, 83, 92) #Posibles (26, 83, 92)
     sombra_boton = (20, 64, 71)
 
-    FPS = 24
+    FPS = 20
     FramePerSec = pygame.time.Clock()
 
     def __init__(self, celulas_por_lado):
@@ -151,6 +153,18 @@ class CA(object):
         generador = GeneradorArboles("B3/S23")
         generador.dibujar_arboles()
 
+    def graficar_densidad(self):
+        t = np.arange(0, self.generacion, 1)
+        s = self.celulas_x_generacion[0:self.generacion]
+
+        fig, ax = plt.subplots()
+        ax.plot(t, s)
+
+        ax.set(xlabel='Generación', ylabel='Células',
+               title='Densidad de células')
+        ax.grid()
+
+        plt.show()
 
     def scrollbar(self, scrollbar_selecionada, posicion_nueva):
         if scrollbar_selecionada:
@@ -295,13 +309,17 @@ class CA(object):
                 print("Boton guardar archivo presionado.")
                 self.guardar_configuracion()
 
-            #Guardar archivo.
+            #Mostrar densidad.
+            elif(posicion_mouse[0] >= self.pos_x_gui and posicion_mouse[0] <= self.pos_x_gui + self.tamanio_boton_x and 
+               posicion_mouse[1] >= self.pos_y_gui+4*self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+4*self.distancia_entre_boton):
+                print("Boton mostrar densidad presionado.")
+                self.graficar_densidad()
+
+            #Generar atractores.
             elif(posicion_mouse[0] >= self.pos_x_gui and posicion_mouse[0] <= self.pos_x_gui + self.tamanio_boton_x and 
                posicion_mouse[1] >= self.pos_y_gui+5*self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+5*self.distancia_entre_boton):
                 print("Botón generación de atractores presionado.")
                 self.generar_arboles()
-                #self.guardar_configuracion()
-
                   
 
     def iniciar_CA(self):
@@ -313,6 +331,9 @@ class CA(object):
         self.screen = pygame.display.set_mode((self.largo_grid, self.ancho_grid))
         #self.screen.set_alpha(128)
         self.screen.fill(self.background_color)
+
+        #Datos para graficación de densidad.
+        self.celulas_x_generacion = np.zeros(10000)
 
         #Posicion inicial de dibujado.
 
@@ -426,6 +447,7 @@ class CA(object):
                 self.grid_t_0 = self.grid_t_1.copy()
                 self.numero_celulas = np.sum(self.grid_t_0)
                 self.generacion += 1
+                self.celulas_x_generacion[self.generacion] = self.numero_celulas
                 pygame.display.set_caption('Autómata celular. Generación: '+str(self.generacion)+" Número de células: "+str(self.numero_celulas) + " Zoom: "+str(self.zoom_val)+" "+self.regla)
 
             self.screen.blit(self.superficie_principal, (0, 0))
@@ -439,8 +461,8 @@ class CA(object):
             self.FramePerSec.tick(self.FPS)
 
 if __name__ == '__main__':
-    #automata_celular = CA(1500)
-    #automata_celular.iniciar_CA()
+    automata_celular = CA(1500)
+    automata_celular.iniciar_CA()
 
-    generador = GeneradorArboles("B3/S23")
-    generador.dibujar_arboles()
+    #generador = GeneradorArboles("B3/S23")
+    #generador.dibujar_arboles()
