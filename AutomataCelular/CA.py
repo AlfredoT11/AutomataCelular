@@ -17,6 +17,7 @@ import OptimizacionesC
 
 #Módulos Python.
 import manejo_archivos_lif
+from GeneradorArboles import GeneradorArboles
 
 class CA(object):
     """Juego de la vida implementado en Pygame."""
@@ -27,7 +28,7 @@ class CA(object):
     color_boton = pygame.Color(26, 83, 92) #Posibles (26, 83, 92)
     sombra_boton = (20, 64, 71)
 
-    FPS = 30
+    FPS = 24
     FramePerSec = pygame.time.Clock()
 
     def __init__(self, celulas_por_lado):
@@ -74,7 +75,6 @@ class CA(object):
         ret = np.empty((w, h, 3), dtype=np.uint8)
         ret[:, :, 2] = ret[:, :, 1] = ret[:, :, 0] = im
         return ret
-
 
 
     def validar_regla_ingresada(self, regla_ingresada):
@@ -128,7 +128,7 @@ class CA(object):
             #Tamanio mínimo = 500
             if nuevo_tamanio < 1000:
                 print("Cambiando tamanio")
-                nuevo_tamanio = 4000
+                nuevo_tamanio = 1000
 
             self.celulas_por_lado = nuevo_tamanio
 
@@ -146,6 +146,10 @@ class CA(object):
 
     def guardar_configuracion(self):
         manejo_archivos_lif.guardar_configuracion_lif(self.grid_t_0, None, None)
+
+    def generar_arboles(self):
+        generador = GeneradorArboles("B3/S23")
+        generador.dibujar_arboles()
 
 
     def scrollbar(self, scrollbar_selecionada, posicion_nueva):
@@ -290,6 +294,13 @@ class CA(object):
                posicion_mouse[1] >= self.pos_y_gui+3*self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+3*self.distancia_entre_boton):
                 print("Boton guardar archivo presionado.")
                 self.guardar_configuracion()
+
+            #Guardar archivo.
+            elif(posicion_mouse[0] >= self.pos_x_gui and posicion_mouse[0] <= self.pos_x_gui + self.tamanio_boton_x and 
+               posicion_mouse[1] >= self.pos_y_gui+5*self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+5*self.distancia_entre_boton):
+                print("Botón generación de atractores presionado.")
+                self.generar_arboles()
+                #self.guardar_configuracion()
 
                   
 
