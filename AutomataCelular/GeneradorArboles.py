@@ -137,14 +137,19 @@ class GeneradorArboles(object):
         if not self.B:
             return -1        
 
-        for n_dimension in range(2, 4):
+        for n_dimension in range(5, 6):
 
             #Se hace el procesamiento de todas las combinaciones para el universo nxn
             #resultados[0] = siguiente estado del estado i.
             #resultados[1] = nivel del estado i.
             #resultados[2] = incidencias del estado i.
+
+            if n_dimension > 3:
+                resultados = OptimizacionesC.generarRelacionesArbolGrande(n_dimension, n_dimension, self.B, self.S)
+            else:
+                resultados = OptimizacionesC.generarRelacionesArbol(n_dimension, n_dimension, self.B, self.S)
+
             
-            resultados = OptimizacionesC.generarRelacionesArbol(n_dimension, n_dimension, self.B, self.S)
             estados_ciclo_encontrados = []
             ciclos = []
             still_lifes = []

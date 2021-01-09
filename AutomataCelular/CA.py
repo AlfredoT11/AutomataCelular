@@ -439,5 +439,8 @@ class CA(object):
             self.FramePerSec.tick(self.FPS)
 
 if __name__ == '__main__':
-    automata_celular = CA(1500)
-    automata_celular.iniciar_CA()
+    #automata_celular = CA(1500)
+    #automata_celular.iniciar_CA()
+
+    generador = GeneradorArboles("B3/S23")
+    generador.dibujar_arboles()
