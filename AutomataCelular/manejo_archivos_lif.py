@@ -1,6 +1,118 @@
 import re
 import numpy as np
 
+def list_to_string(s):  
+    
+    str1 = ""  
+    for ele in s:  
+        str1 += ele
+    return str1 
+
+def guardar_configuracion_lif(grid, ruta, nombre):
+
+    with open("ejemplo.lif", "w") as file:
+        file.write("#Life 1.05\n")
+        file.write("#D Comentario\n")
+        file.write("#N\n")
+
+        #print("Filas: ", grid.shape[0], " Columnas: ", grid.shape[1])
+
+        posibles_columnas = int(np.floor(grid.shape[1] / 80))
+        columnas_restantes = grid.shape[1] % 80
+
+        for i in range(posibles_columnas):
+            #print("Columna: ", i)
+            j = 0
+            while j < grid.shape[0]:
+                if np.sum(grid[j, i*80: i*80 + 80]) > 0:
+                    #print("Bloque inicio: {} , {}".format(j, i*80))
+                    file.write("#P {} {}\n".format(i*80, j))
+                    fila_inicio_bloque = j
+
+                    temp_fila = fila_inicio_bloque + 1
+                    contador_lineas_vacias = 0
+
+                    is_fin_bloque_encontrado = False
+                    while not is_fin_bloque_encontrado and temp_fila < grid.shape[0]:
+
+                        if np.sum(grid[temp_fila, i*80: i*80 + 80]) > 0:
+                            temp_fila += 1
+                            contador_lineas_vacias = 0
+                        else:
+                            contador_lineas_vacias += 1
+                            temp_fila += 1
+                            if contador_lineas_vacias == 2:
+                                is_fin_bloque_encontrado = True
+                                temp_fila -= 2
+
+                    fila_final_bloque = temp_fila
+                    #print("Bloque final: {} , {}".format(fila_final_bloque, 80*i))
+
+                    for fila in range(fila_inicio_bloque, fila_final_bloque+1):
+                        #print("Fila: ", fila, " ", grid[fila:fila+1, i*80: i*80 + 80], "suma: ", np.sum(grid[fila:fila+1, i*80: i*80 + 80]))
+                        if np.sum(grid[fila, i*80: i*80 + 80]) > 0:
+                            linea_datos = []
+                            ultimo_elemento_uno = np.where(grid[fila, i*80: i*80 + 80] != 0)[0][-1]
+                            #print("Ultimo 1: ", np.where(grid[fila, i*80: i*80 + 80] != 0)[0])
+                            for valor in grid[fila, i*80: i*80 + ultimo_elemento_uno+1]:
+                                if valor == 1:
+                                    linea_datos.append('*')
+                                else:
+                                    linea_datos.append('.')
+                            linea_datos.append("\n")
+                            file.write(list_to_string(linea_datos))
+                        else:
+                            file.write(".\n")
+                    j = fila_final_bloque + 1
+                else:
+                    j += 1
+
+        i = posibles_columnas
+        j = 0
+        while j < grid.shape[0]:
+            if np.sum(grid[j, i*80: i*80 + columnas_restantes]) > 0:
+                #print("Bloque inicio: {} , {}".format(j, i*80))
+                file.write("#P {} {}\n".format(j, i*80))
+                fila_inicio_bloque = j
+
+                temp_fila = fila_inicio_bloque + 1
+                contador_lineas_vacias = 0
+
+                is_fin_bloque_encontrado = False
+                while not is_fin_bloque_encontrado and temp_fila < grid.shape[0]:
+
+                    if np.sum(grid[temp_fila, i*80: i*80 + columnas_restantes]) > 0:
+                        temp_fila += 1
+                        contador_lineas_vacias = 0
+                    else:
+                        contador_lineas_vacias += 1
+                        temp_fila += 1
+                        if contador_lineas_vacias == 2:
+                            is_fin_bloque_encontrado = True
+                            temp_fila -= 2
+
+                fila_final_bloque = temp_fila
+                #print("Bloque final: {} , {}".format(fila_final_bloque, 80*i))
+
+                for fila in range(fila_inicio_bloque, fila_final_bloque+1):
+                    #print("Fila: ", fila, " ", grid[fila:fila+1, i*80: i*80 + columnas_restantes], "suma: ", np.sum(grid[fila:fila+1, i*80: i*80 + columnas_restantes]))
+                    if np.sum(grid[fila, i*80: i*80 + 80]) > 0:
+                        linea_datos = []
+                        ultimo_elemento_uno = np.where(grid[fila, i*80: i*80 + columnas_restantes] != 0)[0][-1]
+                        #print("Ultimo 1: ", np.where(grid[fila, i*80: i*80 + columnas_restantes] != 0)[0])
+                        for valor in grid[fila, i*80: i*80 + ultimo_elemento_uno+1]:
+                            if valor == 1:
+                                linea_datos.append('*')
+                            else:
+                                linea_datos.append('.')
+                        linea_datos.append("\n")
+                        file.write(list_to_string(linea_datos))
+                    else:
+                        file.write(".\n")
+                j = fila_final_bloque + 1
+            else:
+                j += 1
+
 
 def leer_archivo_lif(ruta_archivo_lif):
 

@@ -128,7 +128,7 @@ class CA(object):
             #Tamanio mínimo = 500
             if nuevo_tamanio < 1000:
                 print("Cambiando tamanio")
-                nuevo_tamanio = 1000
+                nuevo_tamanio = 4000
 
             self.celulas_por_lado = nuevo_tamanio
 
@@ -143,6 +143,10 @@ class CA(object):
 
             self.generacion = 0
             self.numero_celulas = np.sum(self.grid_t_0)
+
+    def guardar_configuracion(self):
+        manejo_archivos_lif.guardar_configuracion_lif(self.grid_t_0, None, None)
+
 
     def scrollbar(self, scrollbar_selecionada, posicion_nueva):
         if scrollbar_selecionada:
@@ -280,6 +284,12 @@ class CA(object):
                posicion_mouse[1] >= self.pos_y_gui+2*self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+2*self.distancia_entre_boton):
                 print("Boton cargar archivo presionado.")
                 self.cargar_archivo()
+
+            #Guardar archivo.
+            elif(posicion_mouse[0] >= self.pos_x_gui and posicion_mouse[0] <= self.pos_x_gui + self.tamanio_boton_x and 
+               posicion_mouse[1] >= self.pos_y_gui+3*self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+3*self.distancia_entre_boton):
+                print("Boton guardar archivo presionado.")
+                self.guardar_configuracion()
 
                   
 
