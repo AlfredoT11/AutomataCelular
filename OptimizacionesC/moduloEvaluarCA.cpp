@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 
 //Biblioteca Pybind11 para usar código en Python.
 #include <../../../AutomataCelular/venv/Lib/site-packages/pybind11/include/pybind11/pybind11.h>
@@ -202,8 +203,8 @@ py::list generarRelacionesArbolGrande(long long int filas, long long int columna
 
         }
 
-        int nuevoEstadoValor = 0;
-        for (int k = 0; k < filas * columnas; ++k) {
+        long long int nuevoEstadoValor = 0;
+        for (long long int k = 0; k < filas * columnas; ++k) {
             if (nuevoEstado[k]) {
                 nuevoEstadoValor |= 1 << filas * columnas - k - 1;
             }
@@ -486,6 +487,7 @@ DWORD WINAPI evaluarFragmentoGrid(LPVOID lpParameter) {
         columnaFinal = ((DatosHilo*)lpParameter)->columnaFinal - 2;
     }
 
+
     //cout << " Fila: ( " << filaInicial << ", " << filaFinal << " )" << endl;
     //cout << " Columna: ( " << columnaInicial << ", " << columnaFinal << " )" << endl;
 
@@ -528,7 +530,7 @@ DWORD WINAPI evaluarFragmentoGrid(LPVOID lpParameter) {
 }
 
 //py::array_t<bool> evaluar(py::array_t<bool> input1, int s_min, int s_max, int r_min, int r_max) {
-py::array_t<bool> evaluar(py::array_t<bool> input1, py::list B, py::list S) {
+py::list evaluar(py::array_t<bool> input1, py::list B, py::list S) {
     py::buffer_info buf1 = input1.request();
 
     /*  allocate the buffer */
@@ -629,7 +631,10 @@ py::array_t<bool> evaluar(py::array_t<bool> input1, py::list B, py::list S) {
     DatosHilo datosHilo01;
     DatosHilo datosHilo10;
     DatosHilo datosHilo11;
-    
+
+    int* contadorEstados = (int*)calloc(512, sizeof(int));
+
+
     // 00 | 01
     // 10 | 11
 
@@ -783,11 +788,44 @@ py::array_t<bool> evaluar(py::array_t<bool> input1, py::list B, py::list S) {
 
     //}
 
+    //Cálculo de entropía de Shannon.
 
-    // reshape array to match input shape
+    float totalCelulas = (float)X * (float)Y;
+    float entropia = 0;
+    
+
+    for (int i = 1; i < X - 1; i++) {
+        for (int j = 1; j < Y - 1; j++) {
+            short valorDecimalEstado = 0;
+            valorDecimalEstado = potencia(2, 8) * ptr3[j - 1 + Y * (i - 1)] + potencia(2, 7) * ptr3[j + Y * (i - 1)] + potencia(2, 6) * ptr3[j + 1 + Y * (i - 1)] +
+                potencia(2, 5) * ptr3[j - 1 + i * Y] + potencia(2, 4) * ptr3[j + 1 + i * Y] + potencia(2, 3) * ptr3[j + 1 + i * Y] +
+                potencia(2, 2) * ptr3[j - 1 + Y * (i + 1)] + potencia(2, 1) * ptr3[j + Y * (i + 1)] + potencia(2, 0) * ptr3[j + 1 + Y * (i + 1)];
+
+            contadorEstados[valorDecimalEstado]++;
+
+        }
+    }
+
+    for (int i = 0; i < 512; i++) {
+        //cout << i << " : " << contadorEstados[i] << endl;
+        if (contadorEstados[i] > 0) {
+            float qn = contadorEstados[i] / totalCelulas;
+            entropia += (qn)*log2(qn);
+        }
+    }
+
+    //cout << "Entropia: " << entropia << endl;
+
+
+    //reshape array to match input shape
     result.resize({ X,Y });
 
-    return result;
+    py::list resultados;
+    resultados.append(result);
+    resultados.append(entropia*(-1));
+    return resultados;
+
+    //return result, entropia;
 }
 
 

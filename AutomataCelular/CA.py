@@ -166,6 +166,19 @@ class CA(object):
 
         plt.show()
 
+    def graficar_entropia(self):
+        t = np.arange(0, self.generacion, 1)
+        s = self.entropia_x_generacion[0:self.generacion]
+
+        fig, ax = plt.subplots()
+        ax.plot(t, s, color='r')
+
+        ax.set(xlabel='Generación', ylabel='Células',
+               title='Entropía')
+        ax.grid()
+
+        plt.show()
+
     def scrollbar(self, scrollbar_selecionada, posicion_nueva):
         if scrollbar_selecionada:
             print("Horizontal")
@@ -315,9 +328,15 @@ class CA(object):
                 print("Boton mostrar densidad presionado.")
                 self.graficar_densidad()
 
-            #Generar atractores.
+            #Mostrar entropía.
             elif(posicion_mouse[0] >= self.pos_x_gui and posicion_mouse[0] <= self.pos_x_gui + self.tamanio_boton_x and 
                posicion_mouse[1] >= self.pos_y_gui+5*self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+5*self.distancia_entre_boton):
+                print("Botón mostrar entropía presionado.")
+                self.graficar_entropia()
+
+            #Generar atractores.
+            elif(posicion_mouse[0] >= self.pos_x_gui and posicion_mouse[0] <= self.pos_x_gui + self.tamanio_boton_x and 
+               posicion_mouse[1] >= self.pos_y_gui+6*self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+6*self.distancia_entre_boton):
                 print("Botón generación de atractores presionado.")
                 self.generar_arboles()
                   
@@ -334,6 +353,9 @@ class CA(object):
 
         #Datos para graficación de densidad.
         self.celulas_x_generacion = np.zeros(10000)
+
+        #Datos para graficación de entropía.
+        self.entropia_x_generacion = np.zeros(10000)
 
         #Posicion inicial de dibujado.
 
@@ -381,11 +403,17 @@ class CA(object):
         generar_grafica_text_surface, generar_grafica_text_rect = self.font.render('Mostrar densidad', (255, 255, 255))
         self.screen.blit(generar_grafica_text_surface, (self.pos_x_gui, 50+4*self.distancia_entre_boton))
 
-        #Generar atractores
+        #Generar gráfica de entropía.
         pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+5*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+5*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
-        generar_atractores_text_surface, generar_atractores_text_rect = self.font.render('Generar atractores', (255, 255, 255))
+        generar_atractores_text_surface, generar_atractores_text_rect = self.font.render('Mostrar entropía', (255, 255, 255))
         self.screen.blit(generar_atractores_text_surface, (self.pos_x_gui, 50+5*self.distancia_entre_boton))
+
+        #Generar atractores
+        pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+6*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+        pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+6*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+        generar_atractores_text_surface, generar_atractores_text_rect = self.font.render('Generar atractores', (255, 255, 255))
+        self.screen.blit(generar_atractores_text_surface, (self.pos_x_gui, 50+6*self.distancia_entre_boton))
 
         #Ayuda
         pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+8*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
@@ -443,11 +471,14 @@ class CA(object):
                 # print("Juego en movimiento.")
                 # self.grid_t_1 = OptimizacionesC.evaluar(self.grid_t_0, 2, 3, 3, 3).astype(np.int)    
                 # print("Celulas: ", np.sum(self.grid_t_0))          
-                self.grid_t_1 = OptimizacionesC.evaluar(self.grid_t_0, self.B, self.S).astype(np.int)
+                resultados = OptimizacionesC.evaluar(self.grid_t_0, self.B, self.S)
+                self.grid_t_1 = resultados[0].astype(np.int)
+                self.entropia = resultados[1]
                 self.grid_t_0 = self.grid_t_1.copy()
                 self.numero_celulas = np.sum(self.grid_t_0)
                 self.generacion += 1
                 self.celulas_x_generacion[self.generacion] = self.numero_celulas
+                self.entropia_x_generacion[self.generacion] = self.entropia
                 pygame.display.set_caption('Autómata celular. Generación: '+str(self.generacion)+" Número de células: "+str(self.numero_celulas) + " Zoom: "+str(self.zoom_val)+" "+self.regla)
 
             self.screen.blit(self.superficie_principal, (0, 0))
