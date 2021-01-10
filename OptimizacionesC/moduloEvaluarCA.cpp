@@ -1,7 +1,11 @@
 #include <iostream>
+
+//Biblioteca Pybind11 para usar código en Python.
 #include <../../../AutomataCelular/venv/Lib/site-packages/pybind11/include/pybind11/pybind11.h>
 #include <../../../AutomataCelular/venv/Lib/site-packages/pybind11/include/pybind11/numpy.h>
 
+//Biblioteca para multithreading.
+#include <Windows.h>
 
 namespace py = pybind11;
 using namespace std;
@@ -422,6 +426,107 @@ py::list generarRelacionesArbol(int filas, int columnas, py::list B, py::list S)
 
 }
 
+struct DatosHilo {
+    
+    short int filaInicio;
+    short int filaFinal;
+    short int columnaInicio;
+    short int columnaFinal;
+    
+    short int filasTotales;
+    short int columnasTotales;
+
+    short int tamanioB;
+    short int tamanioS;
+
+    int* BC;
+    int* SC;
+    
+    bool* apuntadorGridt0;
+    bool* apuntadorGridt1;
+};
+
+DWORD WINAPI evaluarFragmentoGrid(LPVOID lpParameter) {
+    //cout << "Hola, soy un hilo." << endl;
+
+    //cout << "Rango filas: " << ((DatosHilo*)lpParameter)->filaInicio << ", " << ((DatosHilo*)lpParameter)->filaFinal << endl;
+    //cout << "Rango columnas: " << ((DatosHilo*)lpParameter)->columnaInicio << ", " << ((DatosHilo*)lpParameter)->columnaFinal << endl;
+
+    bool* ptr1 = ((DatosHilo*)lpParameter)->apuntadorGridt0;
+    bool* ptr3 = ((DatosHilo*)lpParameter)->apuntadorGridt1;
+
+    short int Y = ((DatosHilo*)lpParameter)->columnasTotales;
+    short int X = ((DatosHilo*)lpParameter)->filasTotales;
+
+    short int tamanioS = ((DatosHilo*)lpParameter)->tamanioS;
+    short int tamanioB = ((DatosHilo*)lpParameter)->tamanioB;
+
+    int* SC = ((DatosHilo*)lpParameter)->SC;
+    int* BC = ((DatosHilo*)lpParameter)->BC;
+
+    //cout << "Valor inicial SC: " << SC[0] << endl;
+
+    short int filaInicial, filaFinal, columnaInicial, columnaFinal;
+
+    if (((DatosHilo*)lpParameter)->filaInicio == 0) {
+        filaInicial = 1;
+        filaFinal = ((DatosHilo*)lpParameter)->filaFinal - 1;
+    }
+    else {
+        filaInicial = ((DatosHilo*)lpParameter)->filaInicio;
+        filaFinal = ((DatosHilo*)lpParameter)->filaFinal - 2;
+    }
+
+    if (((DatosHilo*)lpParameter)->columnaInicio == 0) {
+        columnaInicial = 1;
+        columnaFinal = ((DatosHilo*)lpParameter)->columnaFinal - 1;
+    }
+    else {
+        columnaInicial = ((DatosHilo*)lpParameter)->columnaInicio;
+        columnaFinal = ((DatosHilo*)lpParameter)->columnaFinal - 2;
+    }
+
+    //cout << " Fila: ( " << filaInicial << ", " << filaFinal << " )" << endl;
+    //cout << " Columna: ( " << columnaInicial << ", " << columnaFinal << " )" << endl;
+
+    //cout << "Apuntador 1: " << ((DatosHilo*)lpParameter)->apuntadorGridt0 << " Apuntador 3: " << ((DatosHilo*)lpParameter)->apuntadorGridt1 << endl;
+    //cout << "Dato 1: " << *(((DatosHilo*)lpParameter)->apuntadorGridt0) << " Dato 3: " << *(((DatosHilo*)lpParameter)->apuntadorGridt1) << endl;
+
+
+    for (short int i = filaInicial; i <= filaFinal; i++) {
+        for (short int j = columnaInicial; j <= columnaFinal; j++) {
+            short int sumaVecinos = 0;
+            sumaVecinos = ptr1[j - 1 + Y * (i - 1)] + ptr1[j + Y * (i - 1)] + ptr1[j + 1 + Y * (i - 1)] +
+                ptr1[j - 1 + i * Y] + ptr1[j + 1 + i * Y] +
+                ptr1[j - 1 + Y * (i + 1)] + ptr1[j + Y * (i + 1)] + ptr1[j + 1 + Y * (i + 1)];
+
+            if (ptr1[j + i * Y] == 1) {
+                bool encontrado = false;
+                for (short int k = 0; k < tamanioS; k++) {
+                    if (sumaVecinos == SC[k]) {
+                        encontrado = true;
+                        ptr3[j + i * Y] = 1;
+                        break;
+                    }
+                }
+
+
+            }
+            else {
+                for (int k = 0; k < tamanioB; k++) {
+                    if (sumaVecinos == BC[k]) {
+                        ptr3[j + i * Y] = 1;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    //cout << "Valor por referencia: " << ptr1[1] << endl;
+
+    return 0;
+}
+
 //py::array_t<bool> evaluar(py::array_t<bool> input1, int s_min, int s_max, int r_min, int r_max) {
 py::array_t<bool> evaluar(py::array_t<bool> input1, py::list B, py::list S) {
     py::buffer_info buf1 = input1.request();
@@ -513,6 +618,131 @@ py::array_t<bool> evaluar(py::array_t<bool> input1, py::list B, py::list S) {
         }
     }*/
 
+    // X = filas, Y = columnas
+    /*int* datosHilo00 = (int*)calloc(4, sizeof(int));  // 00 | 01
+    int* datosHilo01 = (int*)calloc(4, sizeof(int));  // 10 | 11
+    int* datosHilo10 = (int*)calloc(4, sizeof(int));
+    int* datosHilo11 = (int*)calloc(4, sizeof(int));*/
+
+    //Configuración y creación de hilos para el proceasmiento en paralelo del universo.
+    DatosHilo datosHilo00;
+    DatosHilo datosHilo01;
+    DatosHilo datosHilo10;
+    DatosHilo datosHilo11;
+    
+    // 00 | 01
+    // 10 | 11
+
+    if (X % 2 == 0) {
+        datosHilo00.filaInicio = 0;
+        datosHilo00.filaFinal = X / 2;
+        datosHilo01.filaInicio = 0;
+        datosHilo01.filaFinal = X / 2;
+        
+        datosHilo10.filaInicio = X / 2;
+        datosHilo10.filaFinal = X;
+        datosHilo11.filaInicio = X / 2;
+        datosHilo11.filaFinal = X;
+    }
+    else {
+        datosHilo00.filaInicio = 0;
+        datosHilo00.filaFinal = 1 + X / 2;
+        datosHilo01.filaInicio = 0;
+        datosHilo01.filaFinal = 1 + X / 2;
+        
+        datosHilo10.filaInicio = 1 + X / 2;
+        datosHilo10.filaFinal = X;
+        datosHilo11.filaInicio = 1 + X / 2;
+        datosHilo11.filaFinal = X;
+    }
+    
+    // 00 | 01
+    // 10 | 11
+
+    if (Y % 2 == 0) {
+        datosHilo00.columnaInicio = 0;
+        datosHilo00.columnaFinal = Y / 2;
+        datosHilo10.columnaInicio = 0;
+        datosHilo10.columnaFinal = Y / 2;
+        
+        datosHilo01.columnaInicio = Y / 2;
+        datosHilo01.columnaFinal = Y;
+        datosHilo11.columnaInicio = Y / 2;
+        datosHilo11.columnaFinal = Y;
+    }
+    else {
+        datosHilo00.columnaInicio = 0;
+        datosHilo00.columnaFinal = 1 + Y / 2;
+        datosHilo10.columnaInicio = 0;
+        datosHilo10.columnaFinal = 1 + Y / 2;
+        
+        datosHilo01.columnaInicio = 1 + Y / 2;
+        datosHilo01.columnaFinal = Y;
+        datosHilo11.columnaInicio = 1 + Y / 2;
+        datosHilo11.columnaFinal = Y;
+    }
+
+    datosHilo00.apuntadorGridt0 = ptr1;
+    datosHilo01.apuntadorGridt0 = ptr1;
+    datosHilo10.apuntadorGridt0 = ptr1;
+    datosHilo11.apuntadorGridt0 = ptr1;
+
+    datosHilo00.apuntadorGridt1 = ptr3;
+    datosHilo01.apuntadorGridt1 = ptr3;
+    datosHilo10.apuntadorGridt1 = ptr3;
+    datosHilo11.apuntadorGridt1 = ptr3;
+
+    datosHilo00.SC = SC;
+    datosHilo01.SC = SC;
+    datosHilo10.SC = SC;
+    datosHilo11.SC = SC;
+
+    datosHilo00.BC = BC;
+    datosHilo01.BC = BC;
+    datosHilo10.BC = BC;
+    datosHilo11.BC = BC;
+
+    datosHilo00.tamanioB = tamanioB;
+    datosHilo01.tamanioB = tamanioB;
+    datosHilo10.tamanioB = tamanioB;
+    datosHilo11.tamanioB = tamanioB;
+
+    datosHilo00.tamanioS = tamanioS;
+    datosHilo01.tamanioS = tamanioS;
+    datosHilo10.tamanioS = tamanioS;
+    datosHilo11.tamanioS = tamanioS;
+
+    datosHilo00.filasTotales = X;
+    datosHilo01.filasTotales = X;
+    datosHilo10.filasTotales = X;
+    datosHilo11.filasTotales = X;
+
+    datosHilo00.columnasTotales = Y;
+    datosHilo01.columnasTotales = Y;
+    datosHilo10.columnasTotales = Y;
+    datosHilo11.columnasTotales = Y;
+
+    DWORD hilo00;
+    DWORD hilo01;
+    DWORD hilo10;
+    DWORD hilo11;
+
+    HANDLE handleHilo00 = CreateThread(0, 0, evaluarFragmentoGrid, &datosHilo00, 0, &hilo00);    
+    HANDLE handleHilo01 = CreateThread(0, 0, evaluarFragmentoGrid, &datosHilo01, 0, &hilo01);    
+    HANDLE handleHilo10 = CreateThread(0, 0, evaluarFragmentoGrid, &datosHilo10, 0, &hilo10);    
+    HANDLE handleHilo11 = CreateThread(0, 0, evaluarFragmentoGrid, &datosHilo11, 0, &hilo11);
+
+    //El programa debe esperar hasta que los 4 hilos terminen de ejecutarse.
+    
+    
+    WaitForSingleObject(handleHilo00, INFINITE);
+    WaitForSingleObject(handleHilo01, INFINITE);
+    WaitForSingleObject(handleHilo10, INFINITE);
+    WaitForSingleObject(handleHilo11, INFINITE);
+
+
+    //Procesamiento de todo el universo en 1 solo hilo.
+    /*
     for (int i = 1; i < X - 1; i++) {
         for (int j = 1; j < Y - 1; j++) {
             int sumaVecinos = 0;
@@ -549,9 +779,9 @@ py::array_t<bool> evaluar(py::array_t<bool> input1, py::list B, py::list S) {
             else {
                 ptr3[j + i * Y] = 0;
             }*/
-        }
+     //   }
 
-    }
+    //}
 
 
     // reshape array to match input shape

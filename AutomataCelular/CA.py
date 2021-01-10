@@ -30,7 +30,7 @@ class CA(object):
     color_boton = pygame.Color(26, 83, 92) #Posibles (26, 83, 92)
     sombra_boton = (20, 64, 71)
 
-    FPS = 20
+    FPS = 32
     FramePerSec = pygame.time.Clock()
 
     def __init__(self, celulas_por_lado):
@@ -461,7 +461,7 @@ class CA(object):
             self.FramePerSec.tick(self.FPS)
 
 if __name__ == '__main__':
-    automata_celular = CA(1500)
+    automata_celular = CA(1000)
     automata_celular.iniciar_CA()
 
     #generador = GeneradorArboles("B3/S23")
