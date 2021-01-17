@@ -1,3 +1,9 @@
+//Autor: Díaz Tonatiuh
+//Computer Selected Topics(Complex Systems)
+//ESCOM - IPN 2021 / 1
+
+//Última modificación 17 / Enero / 2021
+
 #include <iostream>
 #include <cmath>
 

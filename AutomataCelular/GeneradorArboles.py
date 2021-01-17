@@ -2,7 +2,7 @@
 #Computer Selected Topics (Complex Systems)
 #ESCOM - IPN 2021/1
 
-#Última modificación 08/Enero/2021
+#Última modificación 17/Enero/2021
 
 
 #Módulos C++.
@@ -35,9 +35,9 @@ class GeneradorArboles(object):
         
 
     def validar_regla_ingresada(self, regla_ingresada):
-        print(type(regla_ingresada))
+        #print(type(regla_ingresada))
         if re.search("^B[0]?[1]?[2]?[3]?[4]?[5]?[6]?[7]?[8]?/S[0]?[1]?[2]?[3]?[4]?[5]?[6]?[7]?[8]?$", regla_ingresada):
-            print(regla_ingresada.split("/"))
+            #print(regla_ingresada.split("/"))
             B_S = regla_ingresada.split("/")
 
             B = []
@@ -202,8 +202,8 @@ class GeneradorArboles(object):
                         else:
                             pass
 
-            print("Still lifes: ", still_lifes )
-            print("Ciclos: ", ciclos)
+            #print("Still lifes: ", still_lifes )
+            #print("Ciclos: ", ciclos)
 
             arboles_finales = {}
             for i, diction in enumerate(valores_canonicos_ciclos):
@@ -213,7 +213,7 @@ class GeneradorArboles(object):
                 else:
                     arboles_finales[json.dumps(diction)].append(i)
 
-            print(arboles_finales)
+            #print(arboles_finales)
 
             #Fragmento para el dibujado de árboles.
             
