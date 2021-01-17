@@ -91,7 +91,7 @@ class GeneradorArboles(object):
         valor_canonico = list_to_string(valores_canonicos_binario)
         return int(valor_canonico, 2)
 
-    def dibujar_hijos(self, estado, angulo_propio, rango_disponible, centro_estado, radio = 1000, is_ciclo = False, siguiente_elemento_ciclo = -1):
+    def dibujar_hijos(self, estado, angulo_propio, rango_disponible, centro_estado, radio = 100, is_ciclo = False, siguiente_elemento_ciclo = -1):
     
         #self.relacion_incidencias
         #self.draw
@@ -119,7 +119,7 @@ class GeneradorArboles(object):
         self.draw.line((centro_estado[0], centro_estado[1], self.centro_x+offset_x, self.centro_y+offset_y), fill=128, width=1)
 
         if hijos[0] in self.relacion_incidencias:
-            self.dibujar_hijos(hijos[0], angulo_hijo_1, rango_por_hijo, (self.centro_x+offset_x, self.centro_y+offset_y), radio+1000)
+            self.dibujar_hijos(hijos[0], angulo_hijo_1, rango_por_hijo, (self.centro_x+offset_x, self.centro_y+offset_y), radio+100)
 
 
         if num_hijos > 1:
@@ -130,14 +130,14 @@ class GeneradorArboles(object):
                 self.draw.line((centro_estado[0], centro_estado[1], self.centro_x+offset_x, self.centro_y+offset_y), fill=128, width=1)
 
                 if estado_hijo in self.relacion_incidencias:
-                    self.dibujar_hijos(estado_hijo, angulo_hijo_1+(i+1)*rango_por_hijo, rango_por_hijo, (self.centro_x+offset_x, self.centro_y+offset_y), radio+1000) 
+                    self.dibujar_hijos(estado_hijo, angulo_hijo_1+(i+1)*rango_por_hijo, rango_por_hijo, (self.centro_x+offset_x, self.centro_y+offset_y), radio+100) 
 
     def dibujar_arboles(self):
 
         if not self.B:
             return -1        
 
-        for n_dimension in range(1, 4):
+        for n_dimension in range(2, 4):
 
             #Se hace el procesamiento de todas las combinaciones para el universo nxn
             #resultados[0] = siguiente estado del estado i.
@@ -202,6 +202,9 @@ class GeneradorArboles(object):
                         else:
                             pass
 
+            print("Still lifes: ", still_lifes )
+            print("Ciclos: ", ciclos)
+
             arboles_finales = {}
             for i, diction in enumerate(valores_canonicos_ciclos):
                 if json.dumps(diction) not in arboles_finales.keys():
@@ -218,9 +221,21 @@ class GeneradorArboles(object):
             nombre_directorio = "Resultados\{}\{}x{}".format(self.regla.replace("/", "_"), n_dimension, n_dimension)                     
             if not os.path.exists(nombre_directorio):
                 os.makedirs(nombre_directorio)
-            
-            n = 4000
-            m = 4000
+
+            #Guardar patrones.
+            with open("{}\patrones.txt".format(nombre_directorio), "w") as file:
+                file.write("Still lifes\n")
+                for still in still_lifes:
+                    file.write(str(still)+", ")
+                #file.write(list_to_string(still_lifes))
+                file.write("\nAtractores\n")
+                for ciclo in ciclos:
+                    for estado in ciclo:
+                        file.write(str(estado)+", ")
+                    file.write("\n")
+
+            n = 500
+            m = 500
 
             for num_arbol, arbol in enumerate(arboles_finales):
                 ciclo = ciclos[arboles_finales[arbol][0]]
@@ -234,7 +249,7 @@ class GeneradorArboles(object):
                 if len(ciclo) > 1:
                     estados_ciclo = len(ciclo)
                     tamanio_arco = 2*np.pi/estados_ciclo
-                    radio_ciclo = 1000
+                    radio_ciclo = 100
                     diagonal = radio_ciclo*sqrt(2)
 
                     self.draw.ellipse((self.centro_x - radio_ciclo, self.centro_y - radio_ciclo, self.centro_x + radio_ciclo, self.centro_y + radio_ciclo), outline=128)

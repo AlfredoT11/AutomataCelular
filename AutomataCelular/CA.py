@@ -104,19 +104,36 @@ class CA(object):
                     self.S.append(int(valor))
 
             self.regla = regla_ingresada
+            return True
 
         else:
             print("Regla inválida.")
+            return False
 
     def cambiar_regla(self):
         if self.pausa:
             root = tk.Tk()
-            canvas = tk.Canvas(root, width = 400, height = 300)
-            canvas.pack()
+            root.geometry("200x95")
+            root.title("Cambio de regla.")
+            
+            text_cambio_regla = tk.Label(root, text = "Ingresar la nueva regla. (Bx/Sy)")
+            text_cambio_regla.pack()
 
-            entrada_regla = tk.Entry(root)
-            canvas.create_window(200, 140, window = entrada_regla)
-            confirmar_regla_boton = tk.Button(root, text="Cambiar regla.", command=lambda: self.validar_regla_ingresada(entrada_regla.get())).pack()
+            nueva_regla_entrada = tk.Entry(root)
+            nueva_regla_entrada.pack()
+
+            text_mensaje_adicional = tk.Label(root, text = " ")
+            text_mensaje_adicional.pack()
+
+            def validar_regla():
+                if self.validar_regla_ingresada(nueva_regla_entrada.get()):
+                    text_mensaje_adicional["text"] = "Cambio de regla exitoso."
+                else:
+                    text_mensaje_adicional["text"] = "Regla inválida."                    
+
+            cambiar_regla_boton = tk.Button(root, text = "Cambiar regla.", command = validar_regla)
+            cambiar_regla_boton.pack()
+
             root.mainloop()
 
     def cargar_archivo(self):
@@ -176,8 +193,34 @@ class CA(object):
         root.mainloop()
 
     def generar_arboles(self):
-        generador = GeneradorArboles("B3/S23")
-        generador.dibujar_arboles()
+
+        if self.pausa:
+            root = tk.Tk()
+            root.geometry("300x95")
+            root.title("Generar atractores.")
+            
+            text_generar_atractores = tk.Label(root, text = "Ingresar la regla de generación de atractores. (Bx/Sy)")
+            text_generar_atractores.pack()
+
+            regla_atractores_entrada = tk.Entry(root)
+            regla_atractores_entrada.pack()
+
+            text_mensaje_adicional = tk.Label(root, text = " ")
+            text_mensaje_adicional.pack()
+
+            def validar_regla():
+                text_mensaje_adicional["text"] = ""
+                if self.validar_regla_ingresada(regla_atractores_entrada.get()):
+                    generador = GeneradorArboles(regla_atractores_entrada.get())
+                    generador.dibujar_arboles()                    
+                    text_mensaje_adicional["text"] = "Atractores generados exitosamente."
+                else:
+                    text_mensaje_adicional["text"] = "Regla inválida."                    
+
+            generar_atractores_boton = tk.Button(root, text = "Generar atractores.", command = validar_regla)
+            generar_atractores_boton.pack()
+
+            root.mainloop()
 
     def mostrar_graficas(self):        
 
