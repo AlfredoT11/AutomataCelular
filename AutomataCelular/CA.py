@@ -71,6 +71,10 @@ class CA(object):
 
         self.pausa = True
 
+        #Atributos de gráficas.
+        self.densidad = True
+        self.entropia =True
+
     def gray(self, im):
         im = 255 * (im / im.max())
         w, h = im.shape
@@ -147,37 +151,71 @@ class CA(object):
             self.numero_celulas = np.sum(self.grid_t_0)
 
     def guardar_configuracion(self):
-        manejo_archivos_lif.guardar_configuracion_lif(self.grid_t_0, None, None)
+        manejo_archivos_lif.guardar_configuracion_lif(self.grid_t_0.transpose(), None, None)
 
     def generar_arboles(self):
         generador = GeneradorArboles("B3/S23")
         generador.dibujar_arboles()
 
-    def graficar_densidad(self):
+    def mostrar_graficas(self):        
+
         t = np.arange(0, self.generacion, 1)
-        s = self.celulas_x_generacion[0:self.generacion]
 
-        fig, ax = plt.subplots()
-        ax.plot(t, s)
+        if self.densidad and self.entropia:    
 
-        ax.set(xlabel='Generación', ylabel='Células',
-               title='Densidad de células')
-        ax.grid()
+            s_densidad = self.celulas_x_generacion[0:self.generacion]
+            s_entropia = self.entropia_x_generacion[0:self.generacion]
 
-        plt.show()
+            fig, (ax1, ax2) = plt.subplots(2)
+            #fig.suptitle('Vertically stacked subplots')
+            ax1.set(ylabel='Células',
+                   title='Densidad de células') 
+            ax1.grid()
+            ax1.plot(t, s_densidad)            
+            ax2.set(xlabel='Generación', ylabel='Entropía',
+                               title='Entropía')                   
+            ax2.grid()            
+            ax2.plot(t, s_entropia, color='r')
+            plt.show()
+
+        elif self.densidad and not self.entropia:
+            s = self.celulas_x_generacion[0:self.generacion]
+
+            fig, ax = plt.subplots()
+            ax.plot(t, s)
+
+            ax.set(xlabel='Generación', ylabel='Células',
+                   title='Densidad de células')
+            ax.grid()
+
+            plt.show()
+
+        elif not self.densidad and self.entropia:
+            s = self.entropia_x_generacion[0:self.generacion]
+
+            fig, ax = plt.subplots()
+            ax.plot(t, s, color='r')
+
+            ax.set(xlabel='Generación', ylabel='Células',
+                   title='Entropía')
+            ax.grid()
+
+            plt.show()        
+
+    def graficar_densidad(self):
+
+        if self.densidad:
+            self.densidad = False
+        else:
+            self.densidad = True
 
     def graficar_entropia(self):
-        t = np.arange(0, self.generacion, 1)
-        s = self.entropia_x_generacion[0:self.generacion]
 
-        fig, ax = plt.subplots()
-        ax.plot(t, s, color='r')
+        if self.entropia:
+            self.entropia = False
+        else:
+            self.entropia = True
 
-        ax.set(xlabel='Generación', ylabel='Células',
-               title='Entropía')
-        ax.grid()
-
-        plt.show()
 
     def scrollbar(self, scrollbar_selecionada, posicion_nueva):
         if scrollbar_selecionada:
@@ -322,23 +360,29 @@ class CA(object):
                 print("Boton guardar archivo presionado.")
                 self.guardar_configuracion()
 
-            #Mostrar densidad.
+            #Activar densidad.
             elif(posicion_mouse[0] >= self.pos_x_gui and posicion_mouse[0] <= self.pos_x_gui + self.tamanio_boton_x and 
                posicion_mouse[1] >= self.pos_y_gui+4*self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+4*self.distancia_entre_boton):
-                print("Boton mostrar densidad presionado.")
+                print("Boton generar densidad. presionado..")
                 self.graficar_densidad()
 
-            #Mostrar entropía.
+            #Activar entropía.
             elif(posicion_mouse[0] >= self.pos_x_gui and posicion_mouse[0] <= self.pos_x_gui + self.tamanio_boton_x and 
                posicion_mouse[1] >= self.pos_y_gui+5*self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+5*self.distancia_entre_boton):
-                print("Botón mostrar entropía presionado.")
+                print("Botón generar entropia presionado.")
                 self.graficar_entropia()
+
+            #Mostrar graficas.
+            elif(posicion_mouse[0] >= self.pos_x_gui and posicion_mouse[0] <= self.pos_x_gui + self.tamanio_boton_x and 
+               posicion_mouse[1] >= self.pos_y_gui+6*self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+6*self.distancia_entre_boton):
+                print("Botón mostrar gráficas presionado.")
+                self.mostrar_graficas()
 
             #Generar atractores.
             elif(posicion_mouse[0] >= self.pos_x_gui and posicion_mouse[0] <= self.pos_x_gui + self.tamanio_boton_x and 
-               posicion_mouse[1] >= self.pos_y_gui+6*self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+6*self.distancia_entre_boton):
-                print("Botón generación de atractores presionado.")
-                self.generar_arboles()
+               posicion_mouse[1] >= self.pos_y_gui+7*self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+7*self.distancia_entre_boton):
+               print("Botón generación de atractores presionado.")
+               #self.generar_arboles()
                   
 
     def iniciar_CA(self):
@@ -372,55 +416,65 @@ class CA(object):
         self.pos_x_gui = 570
         self.pos_y_gui = 37
 
+        self.pos_relativa_y_letras = 48
+
         #Pausa
         pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         pausa_text_surface, pausa_text_rect = self.font.render('Pausa', (255, 255, 255))
-        self.screen.blit(pausa_text_surface, (self.pos_x_gui, 50))
+        self.screen.blit(pausa_text_surface, (self.pos_x_gui+71, self.pos_relativa_y_letras))
         
 
         #Cambiar regla
         pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         cambiar_regla_text_surface, cambiar_regla_text_rect = self.font.render('Cambiar regla', (255, 255, 255))
-        self.screen.blit(cambiar_regla_text_surface, (self.pos_x_gui, 50+self.distancia_entre_boton))
+        self.screen.blit(cambiar_regla_text_surface, (self.pos_x_gui+48, self.pos_relativa_y_letras+self.distancia_entre_boton))
 
         #Cargar archivo
         pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+2*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+2*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         cargar_archivo_text_surface, cargar_archivo_text_rect = self.font.render('Cargar archivo', (255, 255, 255))
-        self.screen.blit(cargar_archivo_text_surface, (self.pos_x_gui, 50+2*self.distancia_entre_boton))
+        self.screen.blit(cargar_archivo_text_surface, (self.pos_x_gui+43, self.pos_relativa_y_letras+2*self.distancia_entre_boton))
 
         #Guardar archivo
         pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+3*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+3*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         guardar_archivo_text_surface, guardar_archivo_text_rect = self.font.render('Guardar archivo', (255, 255, 255))
-        self.screen.blit(guardar_archivo_text_surface, (self.pos_x_gui, 50+3*self.distancia_entre_boton))
+        self.screen.blit(guardar_archivo_text_surface, (self.pos_x_gui+40, self.pos_relativa_y_letras+3*self.distancia_entre_boton))
 
-        #Generar gráfica de densidad poblacional
+        #Activar visualizacion de densidad.
         pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+4*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+4*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
-        generar_grafica_text_surface, generar_grafica_text_rect = self.font.render('Mostrar densidad', (255, 255, 255))
-        self.screen.blit(generar_grafica_text_surface, (self.pos_x_gui, 50+4*self.distancia_entre_boton))
+        generar_grafica_text_surface, generar_grafica_text_rect = self.font.render('Activar densidad', (255, 255, 255))
+        self.screen.blit(generar_grafica_text_surface, (self.pos_x_gui+37, self.pos_relativa_y_letras+4*self.distancia_entre_boton))
 
-        #Generar gráfica de entropía.
+        #Activar visualizacion de entropía.
         pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+5*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+5*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
-        generar_atractores_text_surface, generar_atractores_text_rect = self.font.render('Mostrar entropía', (255, 255, 255))
-        self.screen.blit(generar_atractores_text_surface, (self.pos_x_gui, 50+5*self.distancia_entre_boton))
+        generar_atractores_text_surface, generar_atractores_text_rect = self.font.render('Activar entropía', (255, 255, 255))
+        self.screen.blit(generar_atractores_text_surface, (self.pos_x_gui+40, self.pos_relativa_y_letras+5*self.distancia_entre_boton))
 
-        #Generar atractores
+        #Mostrar gráficas
         pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+6*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+6*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+        generar_atractores_text_surface, generar_atractores_text_rect = self.font.render('Mostrar gráficas', (255, 255, 255))
+        self.screen.blit(generar_atractores_text_surface, (self.pos_x_gui+40, self.pos_relativa_y_letras+6*self.distancia_entre_boton))
+
+
+        #Generar atractores
+        pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+7*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+        pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+7*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         generar_atractores_text_surface, generar_atractores_text_rect = self.font.render('Generar atractores', (255, 255, 255))
-        self.screen.blit(generar_atractores_text_surface, (self.pos_x_gui, 50+6*self.distancia_entre_boton))
+        self.screen.blit(generar_atractores_text_surface, (self.pos_x_gui+33, self.pos_relativa_y_letras+7*self.distancia_entre_boton))
+
 
         #Ayuda
-        pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+8*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+        """pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+8*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+8*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
         generar_atractores_text_surface, generar_atractores_text_rect = self.font.render('Ayuda', (255, 255, 255))
-        self.screen.blit(generar_atractores_text_surface, (self.pos_x_gui, 50+8*self.distancia_entre_boton))
-
+        self.screen.blit(generar_atractores_text_surface, (self.pos_x_gui, self.pos_relativa_y_letras+8*self.distancia_entre_boton))
+        """
 
         #Manejo de superficie de desplegado de autómata.
         self.superficie_principal = pygame.Surface((self.tamanio_superficie_grid, self.tamanio_superficie_grid))

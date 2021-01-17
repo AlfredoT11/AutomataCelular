@@ -137,7 +137,7 @@ class GeneradorArboles(object):
         if not self.B:
             return -1        
 
-        for n_dimension in range(5, 6):
+        for n_dimension in range(1, 4):
 
             #Se hace el procesamiento de todas las combinaciones para el universo nxn
             #resultados[0] = siguiente estado del estado i.

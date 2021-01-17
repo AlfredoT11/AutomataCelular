@@ -182,4 +182,4 @@ def leer_archivo_lif(ruta_archivo_lif):
 
     f.close()
 
-    return patron_cargado
+    return patron_cargado.transpose()
