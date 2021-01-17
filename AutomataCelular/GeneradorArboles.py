@@ -144,11 +144,7 @@ class GeneradorArboles(object):
             #resultados[1] = nivel del estado i.
             #resultados[2] = incidencias del estado i.
 
-            if n_dimension > 3:
-                resultados = OptimizacionesC.generarRelacionesArbolGrande(n_dimension, n_dimension, self.B, self.S)
-            else:
-                resultados = OptimizacionesC.generarRelacionesArbol(n_dimension, n_dimension, self.B, self.S)
-
+            resultados = OptimizacionesC.generarRelacionesArbol(n_dimension, n_dimension, self.B, self.S)
             
             estados_ciclo_encontrados = []
             ciclos = []

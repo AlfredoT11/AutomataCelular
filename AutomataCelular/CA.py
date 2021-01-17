@@ -27,8 +27,11 @@ class CA(object):
     background_color = pygame.Color(240, 248, 234) #Posibles colores (24, 29, 29), (1, 22, 39), (61, 8, 20), (13, 19, 33), (25, 34, 51)
     celulas_vivas_color = pygame.Color(255, 255, 255) #Blanco.
     celulas_muertas_color = pygame.Color(64, 64, 64) #Blanco.
-    color_boton = pygame.Color(26, 83, 92) #Posibles (26, 83, 92)
-    sombra_boton = (20, 64, 71)
+    color_boton = pygame.Color(25, 42, 81) #Posibles (26, 83, 92)
+    sombra_boton = (15, 20, 51)
+    color_boton_desactivado = pygame.Color(124, 11, 43) #194, 1, 20
+    sombra_boton_desactivado = pygame.Color(74, 5, 25)
+    
 
     FPS = 32
     FramePerSec = pygame.time.Clock()
@@ -121,8 +124,16 @@ class CA(object):
             root = tk.Tk()
             root.filename = tkinter.filedialog.askopenfilename(initialdir = os.getcwdb(),title = "Selecciona el archivo .lif.",filetypes = (("Life files","*.LIF"),("all files","*.*")))
             ruta_archivo = root.filename
+            print("Ruta: ", ruta_archivo)
+            #if(ruta_archivo == ""):
+            #    tk.Button(root, text="Ningún archivo seleccionado. Cerrar ventada", command=root.destroy).pack()
+            #    return
+
             tk.Button(root, text="Cargar archivo .lif", command=root.destroy).pack()
             root.mainloop()
+
+            if(ruta_archivo == ""):
+                return
 
             self.patron = manejo_archivos_lif.leer_archivo_lif(ruta_archivo)
             filas_patron, columnas_patron = self.patron.shape
@@ -151,7 +162,18 @@ class CA(object):
             self.numero_celulas = np.sum(self.grid_t_0)
 
     def guardar_configuracion(self):
-        manejo_archivos_lif.guardar_configuracion_lif(self.grid_t_0.transpose(), None, None)
+        root = tk.Tk()
+        root.filename = tkinter.filedialog.asksaveasfile(initialdir = os.getcwdb(), defaultextension=".lif" , title = "Guardar archivo .lif", filetypes = (("Life files","*.LIF"),("all files","*.*")))
+        ruta_guardar_archivo = root.filename
+        tk.Button(root, text="Guardar configuración.", command=root.destroy).pack()
+        root.mainloop()
+
+        if(ruta_guardar_archivo == None):
+            return
+        
+        print("Ruta salvado: ", ruta_guardar_archivo.name)
+        manejo_archivos_lif.guardar_configuracion_lif(self.grid_t_0.transpose(), ruta_guardar_archivo.name)
+        root.mainloop()
 
     def generar_arboles(self):
         generador = GeneradorArboles("B3/S23")
@@ -203,18 +225,35 @@ class CA(object):
             plt.show()        
 
     def graficar_densidad(self):
-
+        tamanio_borde = 7
         if self.densidad:
             self.densidad = False
+            pygame.draw.rect(self.screen, self.sombra_boton_desactivado, (self.pos_x_gui, self.pos_y_gui+5+4*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+            pygame.draw.rect(self.screen, self.color_boton_desactivado, (self.pos_x_gui, self.pos_y_gui+4*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+            generar_grafica_text_surface, generar_grafica_text_rect = self.font.render('Activar densidad', (255, 255, 255))
+            self.screen.blit(generar_grafica_text_surface, (self.pos_x_gui+37, self.pos_relativa_y_letras+4*self.distancia_entre_boton))
+
         else:
             self.densidad = True
+            pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+4*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+            pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+4*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+            generar_grafica_text_surface, generar_grafica_text_rect = self.font.render('Activar densidad', (255, 255, 255))
+            self.screen.blit(generar_grafica_text_surface, (self.pos_x_gui+37, self.pos_relativa_y_letras+4*self.distancia_entre_boton))
 
     def graficar_entropia(self):
-
+        tamanio_borde = 7
         if self.entropia:
             self.entropia = False
+            pygame.draw.rect(self.screen, self.sombra_boton_desactivado, (self.pos_x_gui, self.pos_y_gui+5+5*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+            pygame.draw.rect(self.screen, self.color_boton_desactivado, (self.pos_x_gui, self.pos_y_gui+5*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+            generar_atractores_text_surface, generar_atractores_text_rect = self.font.render('Activar entropía', (255, 255, 255))
+            self.screen.blit(generar_atractores_text_surface, (self.pos_x_gui+40, self.pos_relativa_y_letras+5*self.distancia_entre_boton))
         else:
             self.entropia = True
+            pygame.draw.rect(self.screen, self.sombra_boton, (self.pos_x_gui, self.pos_y_gui+5+5*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+            pygame.draw.rect(self.screen, self.color_boton, (self.pos_x_gui, self.pos_y_gui+5*self.distancia_entre_boton, self.tamanio_boton_x, self.tamanio_boton_y), border_radius = tamanio_borde)
+            generar_atractores_text_surface, generar_atractores_text_rect = self.font.render('Activar entropía', (255, 255, 255))
+            self.screen.blit(generar_atractores_text_surface, (self.pos_x_gui+40, self.pos_relativa_y_letras+5*self.distancia_entre_boton))
 
 
     def scrollbar(self, scrollbar_selecionada, posicion_nueva):
@@ -313,14 +352,14 @@ class CA(object):
             self.scrollbar(False, posicion_mouse[1])
                     #       Scroll vertical
             pygame.draw.rect(self.superficie_principal, self.sombra_boton, (17, 40, 18, 500))
-            pygame.draw.rect(self.superficie_principal, (0, 0, 0), (19, self.posicion_scroll_vertical, 14, self.tamanio_grip))
+            pygame.draw.rect(self.superficie_principal, self.color_boton, (19, self.posicion_scroll_vertical, 14, self.tamanio_grip), border_radius = 8)
 
         elif(posicion_mouse[0] >= 40 and posicion_mouse[0] <= 40 + 500 and posicion_mouse[1] >= 17 and posicion_mouse[1] <= 17 + 18):
             #Control horizontal
             self.scrollbar(True, posicion_mouse[0])
                                     #       Scroll horizontal
             pygame.draw.rect(self.superficie_principal, self.sombra_boton, (40, 17, 500, 18))
-            pygame.draw.rect(self.superficie_principal, (0, 0, 0), (self.posicion_scroll_horizontal, 19, self.tamanio_grip, 14))
+            pygame.draw.rect(self.superficie_principal, self.color_boton, (self.posicion_scroll_horizontal, 19, self.tamanio_grip, 14), border_radius = 8)
                     
         #Verificación de cambio de estado de célula.
         elif(posicion_mouse[0] >= 40 and posicion_mouse[0] <= 540 and posicion_mouse[0] >= 40 and posicion_mouse[0] <= 540):
@@ -382,7 +421,7 @@ class CA(object):
             elif(posicion_mouse[0] >= self.pos_x_gui and posicion_mouse[0] <= self.pos_x_gui + self.tamanio_boton_x and 
                posicion_mouse[1] >= self.pos_y_gui+7*self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+7*self.distancia_entre_boton):
                print("Botón generación de atractores presionado.")
-               #self.generar_arboles()
+               self.generar_arboles()
                   
 
     def iniciar_CA(self):
@@ -486,11 +525,11 @@ class CA(object):
 
         #       Scroll vertical
         pygame.draw.rect(self.superficie_principal, self.sombra_boton, (17, 40, 18, 500))
-        pygame.draw.rect(self.superficie_principal, (0, 0, 0), (19, self.posicion_scroll_vertical, 14, self.tamanio_grip))
+        pygame.draw.rect(self.superficie_principal, self.color_boton, (19, self.posicion_scroll_vertical, 14, self.tamanio_grip), border_radius = 8)
 
         #       Scroll horizontal
         pygame.draw.rect(self.superficie_principal, self.sombra_boton, (40, 17, 500, 18))
-        pygame.draw.rect(self.superficie_principal, (0, 0, 0), (self.posicion_scroll_horizontal, 19, self.tamanio_grip, 14))
+        pygame.draw.rect(self.superficie_principal, self.color_boton, (self.posicion_scroll_horizontal, 19, self.tamanio_grip, 14), border_radius = 8)
 
         while(True):
 

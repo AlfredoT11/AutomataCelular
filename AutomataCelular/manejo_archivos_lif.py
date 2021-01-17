@@ -8,9 +8,9 @@ def list_to_string(s):
         str1 += ele
     return str1 
 
-def guardar_configuracion_lif(grid, ruta, nombre):
+def guardar_configuracion_lif(grid, nombre):
 
-    with open("ejemplo.lif", "w") as file:
+    with open(nombre, "w") as file:
         file.write("#Life 1.05\n")
         file.write("#D Comentario\n")
         file.write("#N\n")
