@@ -21,11 +21,17 @@ import random
 import re
 
 #Módulos C++
-import OptimizacionesC
+# import OptimizacionesC
 
 #Módulos Python.
 import manejo_archivos_lif
-from GeneradorArboles import GeneradorArboles
+#from GeneradorArboles import GeneradorArboles
+
+# Define constants for ant orientations
+NORTH = 0
+EAST = 1
+SOUTH = 2
+WEST = 3
 
 class CA(object):
     """Juego de la vida implementado en Pygame."""
@@ -51,15 +57,22 @@ class CA(object):
         self.tamanio_celula = 10
         self.celulas_por_lado = celulas_por_lado
 
-        self.grid_t_0 = np.zeros((celulas_por_lado, celulas_por_lado), np.int)
-        self.grid_t_1 = np.zeros((celulas_por_lado, celulas_por_lado), np.int)
+        self.grid_t_0 = np.zeros((celulas_por_lado, celulas_por_lado, 3), np.int8)
+        self.grid_t_1 = np.zeros((celulas_por_lado, celulas_por_lado, 3), np.int8)
 
+        self.ants_queen_t_0 = [(210, 210, NORTH)]
+        self.ants_soldier_t_0 = [(220, 220, EAST)]
+        self.ants_worker_t_0 = [(210, 220, SOUTH)]
+        self.ants_breeder_t_0 = [(220, 210, WEST), (225, 210, NORTH), (25, 230, EAST)]
+        
+        """
         self.patron = manejo_archivos_lif.leer_archivo_lif("lif/GUNSTAR.lif")
         self.numero_celulas = np.sum(self.grid_t_0)
         self.offset_inicio_patron = 100
         for i in range(self.patron.shape[0]):
             for j in range(self.patron.shape[1]):
                 self.grid_t_0[i+self.offset_inicio_patron, j+self.offset_inicio_patron] = self.patron[i, j]       
+        """
 
         self.zoom_val_desplegable = 1
         #Atributos para controlar la visualización de las células.
@@ -174,8 +187,8 @@ class CA(object):
 
             #Se crea un nuevo tamaño en función del archivo leído.
 
-            self.grid_t_0 = np.zeros((nuevo_tamanio, nuevo_tamanio), np.int)
-            self.grid_t_1 = np.zeros((nuevo_tamanio, nuevo_tamanio), np.int)
+            self.grid_t_0 = np.zeros((nuevo_tamanio, nuevo_tamanio), int)
+            self.grid_t_1 = np.zeros((nuevo_tamanio, nuevo_tamanio), int)
 
             for i in range(filas_patron):
                 for j in range(columnas_patron):
@@ -198,6 +211,7 @@ class CA(object):
         manejo_archivos_lif.guardar_configuracion_lif(self.grid_t_0.transpose(), ruta_guardar_archivo.name)
         root.mainloop()
 
+    """
     def generar_arboles(self):
 
         if self.pausa:
@@ -227,6 +241,7 @@ class CA(object):
             generar_atractores_boton.pack()
 
             root.mainloop()
+    """
 
     def mostrar_graficas(self):        
 
@@ -482,12 +497,115 @@ class CA(object):
                 #print("Botón mostrar gráficas presionado.")
                 self.mostrar_graficas()
 
+            """
             #Generar atractores.
             elif(posicion_mouse[0] >= self.pos_x_gui and posicion_mouse[0] <= self.pos_x_gui + self.tamanio_boton_x and 
                posicion_mouse[1] >= self.pos_y_gui+7*self.distancia_entre_boton and posicion_mouse[1] <= self.pos_y_gui + self.tamanio_boton_y+7*self.distancia_entre_boton):
                #print("Botón generación de atractores presionado.")
                self.generar_arboles()
-                  
+            """
+    
+    def move_ant(self, ant):
+        x, y, orientation = ant
+        grid_value = None
+        height, width, _ = self.grid_t_0.shape
+
+        # Determine the cell color the ant is on
+        cell_color = sum(self.grid_t_0[x, y])
+
+        # Flip the cell color
+        #new_grid[x, y] = not cell_color
+        if(cell_color == 0):
+            grid_value = {
+                            'position': (x, y),
+                            'value': [255, 255, 255]
+                        }
+        else:
+            grid_value = {
+                            'position': (x, y),
+                            'value': [0, 0, 0]
+                        }
+
+        # Update the ant's position and orientation based on the rules
+        if cell_color:
+            orientation = (orientation + 1) % 4  # Turn right
+        else:
+            orientation = (orientation - 1) % 4  # Turn left
+
+        # Move the ant forward
+        if orientation == NORTH:
+            x -= 1
+        elif orientation == EAST:
+            y += 1
+        elif orientation == SOUTH:
+            x += 1
+        elif orientation == WEST:
+            y -= 1
+
+        # Ensure the ant wraps around the grid edges
+        x = x % height
+        y = y % width
+
+        ant_info = {
+            'position': (x, y),
+            'orientation': orientation
+        }
+
+        #new_ants.append((x, y, orientation))
+        return grid_value, ant_info
+
+    def evaluate_langton_step(self, grid, ants):
+        """
+        Perform one step of Langton's Ant model.
+
+        Parameters:
+        - grid: NumPy array of boolean values representing the grid.
+        - ants: List of ant objects, where each ant has (x, y) position and orientation.
+
+        Returns:
+        - The new state of the grid after one step.
+        - Updated ant positions and orientations.
+        """
+        height, width, _ = grid.shape
+        new_grid = grid.copy()
+        new_ants = []
+
+        for ant in ants:
+            x, y, orientation = ant
+
+            # Determine the cell color the ant is on
+            cell_color = sum(grid[x, y])
+
+            # Flip the cell color
+            #new_grid[x, y] = not cell_color
+            if(cell_color == 0):
+                new_grid[x, y] = [255, 255, 255]
+            else:
+                new_grid[x, y] = [0, 0, 0]
+
+            # Update the ant's position and orientation based on the rules
+            if cell_color:
+                orientation = (orientation + 1) % 4  # Turn right
+            else:
+                orientation = (orientation - 1) % 4  # Turn left
+
+            # Move the ant forward
+            if orientation == NORTH:
+                x -= 1
+            elif orientation == EAST:
+                y += 1
+            elif orientation == SOUTH:
+                x += 1
+            elif orientation == WEST:
+                y -= 1
+
+            # Ensure the ant wraps around the grid edges
+            x = x % height
+            y = y % width
+
+            new_ants.append((x, y, orientation))
+
+        return new_grid, new_ants
 
     def iniciar_CA(self):
 
@@ -617,27 +735,76 @@ class CA(object):
                         #print("Zoom out")
                         self.zoom_out()
 
-                if event.type == pygame.MOUSEBUTTONDOWN:                    
-                    self.manejo_click()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_presses = pygame.mouse.get_pressed()
+                    if(mouse_presses[0]):
+                        self.manejo_click()
 
             if not self.pausa:
                 # print("Juego en movimiento.")
                 # self.grid_t_1 = OptimizacionesC.evaluar(self.grid_t_0, 2, 3, 3, 3).astype(np.int)    
                 # print("Celulas: ", np.sum(self.grid_t_0))          
-                resultados = OptimizacionesC.evaluar(self.grid_t_0, self.B, self.S)
-                self.grid_t_1 = resultados[0].astype(np.int)
-                self.entropia = resultados[1]
+                # resultados = OptimizacionesC.evaluar(self.grid_t_0, self.B, self.S)
+                #self.grid_t_1 = self.evaluate_langton_step(self.grid_t_0)
+
+                self.grid_t_1 = self.grid_t_0.copy()
+                ants_positions = []
+
+                # Soldiers
+                self.ants_soldier_t_1 = []
+                for ant in self.ants_soldier_t_0:
+                    grid_value, ant_info = self.move_ant(ant)
+                    self.ants_soldier_t_1.append((ant_info['position'][0], ant_info['position'][1], ant_info['orientation']))
+                    self.grid_t_1[grid_value['position'][0], grid_value['position'][1]] = grid_value['value']
+                    ants_positions.append((ant_info['position'][0], ant_info['position'][1], [255, 0, 0]))
+                self.ants_soldier_t_0 = self.ants_soldier_t_1
+
+                # Workers
+                self.ants_worker_t_1 = []
+                for ant in self.ants_worker_t_0:
+                    grid_value, ant_info = self.move_ant(ant)
+                    self.ants_worker_t_1.append((ant_info['position'][0], ant_info['position'][1], ant_info['orientation']))
+                    self.grid_t_1[grid_value['position'][0], grid_value['position'][1]] = grid_value['value']
+                    ants_positions.append((ant_info['position'][0], ant_info['position'][1], [0, 255, 0]))
+                self.ants_worker_t_0 = self.ants_worker_t_1
+
+                # Breeders
+                self.ants_breeder_t_1 = []
+                for ant in self.ants_breeder_t_0:
+                    grid_value, ant_info = self.move_ant(ant)
+                    self.ants_breeder_t_1.append((ant_info['position'][0], ant_info['position'][1], ant_info['orientation']))
+                    self.grid_t_1[grid_value['position'][0], grid_value['position'][1]] = grid_value['value']
+                    ants_positions.append((ant_info['position'][0], ant_info['position'][1], [0, 0, 255]))
+                self.ants_breeder_t_0 = self.ants_breeder_t_1
+
+                # Queens
+                self.ants_queen_t_1 = []
+                for ant in self.ants_queen_t_0:
+                    grid_value, ant_info = self.move_ant(ant)
+                    self.ants_queen_t_1.append((ant_info['position'][0], ant_info['position'][1], ant_info['orientation']))
+                    self.grid_t_1[grid_value['position'][0], grid_value['position'][1]] = grid_value['value']
+                    ants_positions.append((ant_info['position'][0], ant_info['position'][1], [0, 255, 255]))
+                self.ants_queen_t_0 = self.ants_queen_t_1
+
+                #self.grid_t_1, self.ants_t_1 = self.evaluate_langton_step(self.grid_t_0, self.ants_t_0)
+                #self.grid_t_1 = resultados[0].astype(int)
+                #self.entropia = resultados[1]
                 self.grid_t_0 = self.grid_t_1.copy()
+                
+                for ant_position in ants_positions:
+                    self.grid_t_1[ant_position[0], ant_position[1]] = ant_position[2]
+
                 self.numero_celulas = np.sum(self.grid_t_0)
                 self.generacion += 1
                 self.celulas_x_generacion[self.generacion] = self.numero_celulas
-                self.entropia_x_generacion[self.generacion] = self.entropia
-                pygame.display.set_caption('Autómata celular. Generación: '+str(self.generacion)+" Número de células: "+str(self.numero_celulas) + " Zoom: "+str(self.zoom_val)+" "+self.regla)
+                #self.entropia_x_generacion[self.generacion] = self.entropia
+                #pygame.display.set_caption('Autómata celular. Generación: '+str(self.generacion)+" Número de células: "+str(self.numero_celulas) + " Zoom: "+str(self.zoom_val)+" "+self.regla)
+                pygame.display.set_caption('Autómata celular. Generación: '+str(self.generacion)+" Zoom: "+str(self.zoom_val)+" "+self.regla)
 
             self.screen.blit(self.superficie_principal, (0, 0))
             
             #Redibujado del nuevo estado.
-            surf_celulas = pygame.surfarray.make_surface(self.grid_t_0[self.inicio_x:self.inicio_x + self.celulas_desplegadas, self.inicio_y:self.inicio_y+self.celulas_desplegadas]*255)
+            surf_celulas = pygame.surfarray.make_surface(self.grid_t_1[self.inicio_x:self.inicio_x + self.celulas_desplegadas, self.inicio_y:self.inicio_y+self.celulas_desplegadas])
             self.superficie_principal.blit(pygame.transform.scale(surf_celulas, (self.tamanio_superficie_desplegable, self.tamanio_superficie_desplegable)), (40, 40))
 
 
@@ -650,7 +817,7 @@ if __name__ == '__main__':
     is_valido = False
     while(not is_valido):
         celulas_por_lado = int(input("Ingresa el número de células por lado: "))
-        if celulas_por_lado >= 1000 and celulas_por_lado <= 5000 and celulas_por_lado % 500 == 0:
+        if celulas_por_lado >= 0 and celulas_por_lado <= 5000:
             is_valido = True
         else:
             print("Número de células por lado inválido. Por favor ingresa un número válido con las reglas mostradas al inicio.")
